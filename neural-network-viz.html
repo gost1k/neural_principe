@@ -69,7 +69,7 @@ body { display:flex; flex-direction:column; }
   box-shadow:0 -2px 6px rgba(0,0,0,0.05); overflow:hidden;
 }
 .li {
-  position:absolute; top:0; bottom:0; width:160px;
+  position:absolute; top:0; bottom:0; width:90px;
   display:flex; flex-direction:column; justify-content:center; align-items:center;
   text-align:center; padding:0 4px; transform:translateX(-50%);
   pointer-events:none; transition:all .3s;
@@ -172,7 +172,7 @@ input[type=range] { accent-color:#0077cc; width:70px; flex-shrink:0; cursor:poin
   <div class="as-block">
     <span style="font-size:8px;color:#8a98b0;font-family:'Orbitron',monospace;white-space:nowrap">1 БЛОК =</span>
     <span class="as-badge" style="background:rgba(233,30,99,0.1);color:#E91E63;border:1px solid rgba(233,30,99,0.25)">ATTENTION</span>
-    <span style="color:#ccc;font-size:12px">+</span>
+    <span class="as-badge" style="background:rgba(138,152,176,0.15);color:#6a7a90;border:1px solid rgba(138,152,176,0.3);font-size:8px">Add&Norm</span>
     <span class="as-badge" style="background:rgba(156,39,176,0.1);color:#9C27B0;border:1px solid rgba(156,39,176,0.25)">FFN</span>
     <span class="as-repeat">↻ × 32–120 раз</span>
     <span class="as-note">= вся глубина трансформера</span>
@@ -184,42 +184,16 @@ input[type=range] { accent-color:#0077cc; width:70px; flex-shrink:0; cursor:poin
 
 <!-- BOTTOM PANEL: layer glossary -->
 <div class="bot-panel" id="botPanel">
-  <div class="li" id="li-0">
-    <div class="li-name" style="color:#2196F3">ТОКЕНЫ</div>
-    <div class="li-line">слова → номера</div>
-    <div class="li-line">словарь ~50 000</div>
-    <div class="li-line">все сразу, не по одному</div>
-  </div>
-  <div class="li" id="li-1">
-    <div class="li-name" style="color:#4CAF50">EMBEDDING</div>
-    <div class="li-line">номер → 512 чисел</div>
-    <div class="li-line">«координаты» в облаке смыслов</div>
-    <div class="li-line">+ позиция в тексте</div>
-  </div>
-  <div class="li" id="li-2">
-    <div class="li-name" style="color:#FF9800">Q / K / V</div>
-    <div class="li-line">Q = «что ищу?»</div>
-    <div class="li-line">K = «что предлагаю?»</div>
-    <div class="li-line">V = «моё содержимое»</div>
-  </div>
-  <div class="li" id="li-3">
-    <div class="li-name" style="color:#E91E63">ATTENTION</div>
-    <div class="li-line">каждое слово смотрит на все предыдущие</div>
-    <div class="li-line">важные слова получают больший вес</div>
-    <div class="li-line">8 «голов» — разные аспекты</div>
-  </div>
-  <div class="li" id="li-4">
-    <div class="li-name" style="color:#9C27B0">FFN</div>
-    <div class="li-line">нейрон: сумма входов × веса</div>
-    <div class="li-line">ReLU отсекает негативное</div>
-    <div class="li-line">2048 нейронов в слое</div>
-  </div>
-  <div class="li" id="li-5">
-    <div class="li-name" style="color:#009688">OUTPUT</div>
-    <div class="li-line">512 чисел → таблица → 50K оценок</div>
-    <div class="li-line">вероятности (%)</div>
-    <div class="li-line">слово с самым большим %</div>
-  </div>
+  <div class="li" id="li-0"><div class="li-name" style="color:#2196F3">ТОКЕНЫ</div><div class="li-line">слова → номера</div><div class="li-line">~50K</div></div>
+  <div class="li" id="li-1"><div class="li-name" style="color:#4CAF50">EMBEDDING</div><div class="li-line">512 чисел</div><div class="li-line">координаты</div></div>
+  <div class="li" id="li-2"><div class="li-name" style="color:#5D8A66">+ POS</div><div class="li-line">RoPE/sine</div><div class="li-line">позиция</div></div>
+  <div class="li" id="li-3"><div class="li-name" style="color:#FF9800">Q/K/V</div><div class="li-line">Wq,Wk,Wv</div><div class="li-line">3 роли</div></div>
+  <div class="li" id="li-4"><div class="li-name" style="color:#E91E63">ATTENTION</div><div class="li-line">Σ α·V</div><div class="li-line">8 голов</div></div>
+  <div class="li" id="li-5"><div class="li-name" style="color:#8a98b0">ADD&NORM</div><div class="li-line">RMSNorm</div><div class="li-line">residual</div></div>
+  <div class="li" id="li-6"><div class="li-name" style="color:#9C27B0">FFN</div><div class="li-line">SwiGLU</div><div class="li-line">2048 нейрон</div></div>
+  <div class="li" id="li-7"><div class="li-name" style="color:#8a98b0">ADD&NORM</div><div class="li-line">RMSNorm</div><div class="li-line">residual</div></div>
+  <div class="li" id="li-8"><div class="li-name" style="color:#6a7a90">FINAL LN</div><div class="li-line">RMSNorm</div><div class="li-line">перед output</div></div>
+  <div class="li" id="li-9"><div class="li-name" style="color:#009688">OUTPUT</div><div class="li-line">50K логитов</div><div class="li-line">softmax</div></div>
 </div>
 
 <!-- CONTROLS -->
@@ -258,7 +232,7 @@ window.addEventListener('resize', resize);
 // ═══════════════════════════════════════════════════════
 // LAYOUT  — nodes in upper portion, viz in lower
 // ═══════════════════════════════════════════════════════
-const NUM_LAYERS = 6;
+const NUM_LAYERS = 10;
 const NUM_NODES  = 4;
 const TOK_TRAIN = ['Кот','сидит','на','крыше'];
 const TOK_INFER = ['Что','такое','нейро','сеть'];
@@ -277,7 +251,7 @@ function ny(j) {
 }
 
 function lx(i) {
-  const ml = W * 0.07, mr = W * 0.04;
+  const ml = W * 0.03, mr = W * 0.22;
   return ml + (W - ml - mr) * (i / (NUM_LAYERS - 1));
 }
 
@@ -295,9 +269,13 @@ function positionBottomItems() {
 const LAYER_META = [
   { name:'ТОКЕНЫ',    sub:'~50К слов',    col:'#2196F3' },
   { name:'EMBEDDING', sub:'512-dim',       col:'#4CAF50' },
-  { name:'Q / K / V', sub:'Attn proj.',    col:'#FF9800' },
+  { name:'+ POS',      sub:'RoPE/sine',    col:'#5D8A66' },
+  { name:'Q/K/V',     sub:'Attn proj.',   col:'#FF9800' },
   { name:'ATTENTION', sub:'8 голов',       col:'#E91E63' },
-  { name:'FFN',       sub:'2048 нейрон',   col:'#9C27B0' },
+  { name:'ADD & NORM',sub:'RMSNorm',      col:'#8a98b0' },
+  { name:'FFN',       sub:'SwiGLU',       col:'#9C27B0' },
+  { name:'ADD & NORM',sub:'RMSNorm',      col:'#8a98b0' },
+  { name:'FINAL LN',  sub:'RMSNorm',      col:'#6a7a90' },
   { name:'OUTPUT',    sub:'50К логитов',   col:'#009688' },
 ];
 
@@ -307,9 +285,13 @@ const EMBEDDING_VEC = [0.34, -0.12, 0.78, 0.41];
 const W_SMPL = [
   [[ 0.34, 0.12,-0.67, 0.89],[ 0.21,-0.45, 0.77,-0.33],[ 0.56, 0.82,-0.19, 0.44],[-0.71, 0.38, 0.62,-0.55]],
   [[ 0.41,-0.29, 0.58, 0.73],[ 0.85,-0.62, 0.19,-0.47],[ 0.33, 0.66,-0.81, 0.12],[-0.54, 0.97,-0.28, 0.65]],
+  [[ 0.12, 0.05,-0.08, 0.03],[ 0.02,-0.01, 0.04,-0.02],[ 0.06, 0.03,-0.05, 0.01],[-0.04, 0.02, 0.07,-0.03]],
   [[ 0.67, 0.28,-0.44, 0.83],[ 0.31,-0.75, 0.92,-0.18],[ 0.59, 0.47,-0.63, 0.24],[-0.82, 0.16, 0.74,-0.39]],
   [[ 0.53,-0.37, 0.68, 0.22],[ 0.79, 0.44,-0.56, 0.31],[ 0.16,-0.88, 0.43,-0.67],[ 0.94,-0.21, 0.77, 0.48]],
   [[ 0.42, 0.73,-0.29, 0.61],[ 0.85,-0.54, 0.38,-0.72],[ 0.27, 0.96,-0.47, 0.13],[-0.63, 0.35, 0.82,-0.44]],
+  [[ 0.38, 0.61,-0.22, 0.55],[ 0.72,-0.48, 0.31,-0.65],[ 0.19, 0.84,-0.41, 0.08],[-0.58, 0.28, 0.76,-0.38]],
+  [[ 0.45, 0.68,-0.31, 0.59],[ 0.81,-0.52, 0.35,-0.68],[ 0.24, 0.91,-0.44, 0.11],[-0.62, 0.32, 0.79,-0.41]],
+  [[ 0.51, 0.71,-0.28, 0.62],[ 0.78,-0.55, 0.38,-0.71],[ 0.29, 0.88,-0.46, 0.14],[-0.65, 0.35, 0.82,-0.45]],
 ];
 
 // ═══════════════════════════════════════════════════════
@@ -325,69 +307,90 @@ const TRAIN_STEPS = [
   },
   {
     title:'2. Embedding — облако смыслов',
-    simple:'Каждый номер превращается в 512 чисел — как координаты точки в пространстве. «Кот» и «кошка» оказываются рядом, «формула» — далеко. Плюс добавляем позицию: первое слово, второе, третье… Это не веса — это векторы-представления, которые дальше пойдут в блоки. Веса (матрицы умножения) лежат внутри самих блоков.',
-    desc:'E = EmbeddingTable[id] + PositionalEncoding[pos]. Вектор 512-dim. Семантическое пространство: cosine similarity между векторами ≈ смысловая близость.',
+    simple:'Каждый номер превращается в 512 чисел — как координаты точки в пространстве. «Кот» и «кошка» оказываются рядом, «формула» — далеко. Это не веса — это векторы-представления. Веса лежат внутри блоков.',
+    desc:'E = EmbeddingTable[id]. Вектор 512-dim. Семантическое пространство: cosine similarity ≈ смысловая близость.',
     code:'2847 → [0.34, -0.12, 0.78, 0.41, ...]\n            └── 512 чисел-координат',
     active:[0,1], dir:'fwd', col:'#4CAF50', viz:'embedding', attn:false, loss:false, bp:false, upd:false,
   },
   {
-    title:'3. Q, K, V — три роли каждого слова',
-    simple:'В блок приходят векторы от embedding (не веса!). Внутри блока лежат свои матрицы Wq, Wk, Wv. Умножаем вектор на каждую — получаем три «роли»: Q — «что я ищу?», K — «что я предлагаю?», V — «моё содержимое». Представь библиотеку: Q — твой запрос, K — заголовки на полках, V — текст внутри. Каждое слово одновременно и спрашивает, и отвечает.',
-    desc:'Q = X·Wq, K = X·Wk, V = X·Wv. Три линейные проекции, обучаемые веса Wq,Wk,Wv ∈ ℝ^{d×d_k}. d=512, d_k=64 на голову.',
-    code:'Q = X · Wq  ← "что я ищу?"\nK = X · Wk  ← "что я предлагаю?"\nV = X · Wv  ← "моё содержимое"\n\nWq, Wk, Wv: матрицы [512 × 64]',
-    active:[1,2], dir:'fwd', col:'#FF9800', viz:'qkv', attn:false, loss:false, bp:false, upd:false,
+    title:'3. Positional Encoding — позиция в тексте',
+    simple:'Добавляем информацию о позиции: первое слово, второе, третье… Sine/cosine или RoPE (LLaMA). Без этого модель не знает порядок слов.',
+    desc:'E = E + PositionalEncoding[pos]. RoPE: позиция через поворот в Attention. LLaMA, GPT-NeoX.',
+    code:'pos 0 → [0.1, 0.0, 0.2, ...]\npos 1 → [0.0, 0.1, 0.0, ...]\n\nE_final = E + pos',
+    active:[1,2], dir:'fwd', col:'#5D8A66', viz:null, attn:false, loss:false, bp:false, upd:false,
   },
   {
-    title:'4. Attention — кто на кого смотрит',
-    simple:'Сравниваем Q каждого слова с K всех остальных — получаем «насколько важно». Слово «крыша» спрашивает: кто мне важен? «Кот» — очень (0.65), «сидит» — средне (0.25), «на» — слабо (0.08). Causal mask: каждое слово смотрит только на предыдущие, не в будущее. Важные слова умножаем на их V и складываем — получаем обновлённое представление.',
-    desc:'Score(i,j) = Q_i·K_j^T / √d_k. Causal mask: attention только на j≤i. Softmax → веса α. Output = Σ α_j · V_j. Multi-head: 8 голов, concat.',
-    code:'Score = Q · Kᵀ / √64\n\n"крыша"→"Кот"  : 0.65 ← сильно\n"крыша"→"сидит": 0.25 ← средне\n"крыша"→"на"   : 0.08 ← слабо',
-    active:[2,3], dir:'fwd', col:'#FF9800', viz:'attention', attn:true, loss:false, bp:false, upd:false,
+    title:'4. Q, K, V — три роли каждого слова',
+    simple:'В блок приходят векторы (E + pos). Внутри блока матрицы Wq, Wk, Wv. Умножаем вектор на каждую — получаем Q, K, V. Q — «что ищу?», K — «что предлагаю?», V — «моё содержимое».',
+    desc:'Q = X·Wq, K = X·Wk, V = X·Wv. Три линейные проекции. d=512, d_k=64 на голову.',
+    code:'Q = X · Wq  K = X · Wk  V = X · Wv\n\nWq, Wk, Wv: матрицы [512 × 64]',
+    active:[2,3], dir:'fwd', col:'#FF9800', viz:'qkv', attn:false, loss:false, bp:false, upd:false,
   },
   {
-    title:'5. FFN — нейроны «думают» о словах',
-    simple:'Feed-Forward Network: слой из ~2048 нейронов. Каждый нейрон берёт 512 чисел на входе, умножает на свои веса, складывает. ReLU: если сумма положительная — передаём дальше, иначе — ноль. Второй слой сужает обратно до 512. Здесь «записаны» фактические знания модели — паттерны, понятия, связи.',
-    desc:'FFN(x) = ReLU(x·W₁+b₁)·W₂+b₂. W₁: d→4d (512→2048), W₂: 4d→d. ReLU(z)=max(0,z). Хранит фактические знания в весах.',
-    code:'out = ReLU(x·W₁ + b₁) · W₂ + b₂\n\nW₁: [512 → 2048]  ← расширяем\nW₂: [2048 → 512]  ← сужаем\nReLU(x) = max(0, x)  ← порог',
-    active:[3,4], dir:'fwd', col:'#9C27B0', viz:'ffn', attn:false, loss:false, bp:false, upd:false,
+    title:'5. Attention — кто на кого смотрит',
+    simple:'Сравниваем Q с K — получаем «насколько важно». Causal mask: каждое слово смотрит только на предыдущие. Σ α·V — взвешенная сумма. Multi-head: 8 голов, concat.',
+    desc:'Score = Q·K^T/√d_k. Causal mask. Softmax → α. Output = Σ α_j · V_j.',
+    code:'"крыша"→"Кот"  : 0.65\n"крыша"→"сидит": 0.25\n"крыша"→"на"   : 0.08',
+    active:[3,4], dir:'fwd', col:'#FF9800', viz:'attention', attn:true, loss:false, bp:false, upd:false,
   },
   {
-    title:'6. Трансформер-блок — и таких МНОГО',
-    simple:'Один блок = Attention (слова смотрят друг на друга) + FFN (нейроны обрабатывают). Между ними — Add & Norm. Таких блоков десятки: GPT-2 — 12, LLaMA-3 70B — 80, GPT-4 — ~120. Ранние блоки ловят синтаксис и структуру, поздние — глубокий смысл и факты.',
-    desc:'Transformer Block = Multi-Head Attention + LayerNorm + FFN + LayerNorm. Residual connections. Стек из N блоков. Ранние — синтаксис, поздние — семантика.',
-    code:'GPT-2:   12 блоков,  117 млн параметров\nGPT-3:   96 блоков,  175 млрд параметров\nLLaMA-3 70B: 80 блоков, 70 млрд параметров\nGPT-4:  ~120 блоков, ~1.8 трлн (оценка)',
-    active:[2,3,4], dir:'fwd', col:'#FF9800', viz:'twoBlocks', attn:false, loss:false, bp:false, upd:false,
+    title:'6. Add & Norm — residual + RMSNorm',
+    simple:'Add: вход прибавляем к выходу (residual — помогает градиентам). Norm: RMSNorm (LLaMA) или LayerNorm — нормализация без вычитания среднего.',
+    desc:'x + Attention(x) → RMSNorm. RMSNorm(z) = z / RMS(z). Стабилизирует обучение.',
+    code:'h = x + Attn(x)\nh = RMSNorm(h)',
+    active:[4,5], dir:'fwd', col:'#8a98b0', viz:null, attn:false, loss:false, bp:false, upd:false,
   },
   {
-    title:'7. Output — выбор следующего слова',
-    simple:'После всех блоков остаётся вектор из 512 чисел. Умножаем его на большую таблицу (матрицу словаря) — получаем 50 000 оценок, по одной на каждое слово. Softmax превращает оценки в вероятности (в сумме 100%). Берём слово с максимальной вероятностью — или сэмплируем по этим вероятностям для разнообразия.',
-    desc:'logits = H·W_vocab, H∈ℝ^d, W_vocab∈ℝ^{d×|V|}. P = softmax(logits/T). Sampling: argmax (greedy) или сэмплирование по P. Temperature T управляет случайностью.',
-    code:'512 чисел → таблица → 50 000 оценок\n→ вероятности (%)\n\n"матом" 28.4% ✓ | "на" 18.7% | "рядом" 9.4%',
-    active:[4,5], dir:'fwd', col:'#009688', viz:'output', attn:false, loss:false, bp:false, upd:false,
+    title:'7. FFN — нейроны с SwiGLU',
+    simple:'Feed-Forward: 512 → 2048 → 512. LLaMA использует SwiGLU вместо ReLU: gate·silu(linear). Здесь «записаны» знания модели.',
+    desc:'FFN(x) = (xW_gate·silu(xW_up))·W_down. SwiGLU. Хранит паттерны в весах.',
+    code:'SwiGLU: gate × silu(up)\n512 → 2048 → 512',
+    active:[5,6], dir:'fwd', col:'#9C27B0', viz:'ffn', attn:false, loss:false, bp:false, upd:false,
   },
   {
-    title:'8. Loss — измеряем ошибку',
-    simple:'При обучении правильный ответ известен (следующее слово в тексте). Cross-Entropy Loss: если модели дали нужному слову 9% вместо 100% — штраф большой. Если 95% — штраф маленький. Цель: минимизировать этот штраф, чтобы модель чаще угадывала правильно.',
-    desc:'Cross-Entropy: L = -log P(y*|x). Минимизируем L. Gradient ∇L распространяется на все параметры.',
-    code:'L = -log P(y*|x)\n\nПравильный: "крыше"\nP("крыше") = 9.4% → L = 2.36\n\nЦель: P → 1, L → 0',
-    active:[5], dir:'fwd', col:'#f44336', viz:null, attn:false, loss:true, bp:false, upd:false,
+    title:'8. Add & Norm — после FFN',
+    simple:'Второй Add & Norm в блоке: x + FFN(x) → RMSNorm. Выход блока готов для следующего блока или Final LN.',
+    desc:'x + FFN(x) → RMSNorm. Residual + Norm.',
+    code:'h = x + FFN(x)\nh = RMSNorm(h)',
+    active:[6,7], dir:'fwd', col:'#8a98b0', viz:null, attn:false, loss:false, bp:false, upd:false,
   },
   {
-    title:'9. Backpropagation — ищём виноватых',
-    simple:'Идём назад от Loss по всей цепочке: Output → FFN → Attention → Q/K/V → Embedding. Цепное правило: для каждого веса считаем градиент — насколько он «виноват» в ошибке. Миллиарды весов получают своё число. Те, кто сильнее виноват, будут сильнее подправлены на следующем шаге.',
-    desc:'Chain rule: ∂L/∂W = ∂L/∂y · ∂y/∂W. Градиенты вычисляются от Output к Embedding. Каждый из 175B параметров получает свой ∇W.',
-    code:'∂L/∂W = ∂L/∂y · ∂y/∂W\n\nOutput → FFN → Attention → Embedding\n\nChain rule: градиент каждого веса',
-    active:[5,4,3,2,1,0], dir:'back', col:'#f44336', viz:null, attn:false, loss:true, bp:true, upd:false,
+    title:'9. Трансформер-блок — и таких МНОГО',
+    simple:'Один блок = Q/K/V + Attention + Add&Norm + FFN + Add&Norm. Таких блоков десятки: LLaMA-3 70B — 80. Ранние — синтаксис, поздние — смысл.',
+    desc:'Transformer Block. Pre-LN в LLaMA: Norm перед подуровнем. Стек из N блоков.',
+    code:'GPT-2: 12  LLaMA-3: 80  GPT-4: ~120',
+    active:[3,4,5,6,7], dir:'fwd', col:'#FF9800', viz:'twoBlocks', attn:false, loss:false, bp:false, upd:false,
   },
   {
-    title:'10. Adam Optimizer — подкручиваем веса',
-    simple:'Adam берёт градиенты и обновляет каждый вес: сдвигает чуть-чуть в сторону уменьшения ошибки. Использует momentum (помнит направление) и адаптивный шаг — для «шумных» весов шаг меньше, для стабильных — больше. Learning rate задаёт общую скорость обучения.',
-    desc:'m_t = β₁m_{t-1} + (1-β₁)g_t (momentum), v_t = β₂v_{t-1} + (1-β₂)g_t². W ← W - lr·m̂_t/(√v̂_t+ε). Адаптивный learning rate.',
-    code:'m = 0.9m + 0.1·∇W\nv = 0.999v + 0.001·∇W²\n\nW ← W - lr·m̂/(√v̂ + ε)',
-    active:[0,1,2,3,4,5], dir:'update', col:'#4CAF50', viz:null, attn:false, loss:true, bp:false, upd:true,
+    title:'10. Final LN + Output — выбор слова',
+    simple:'Final LayerNorm (RMSNorm) на последнем токене. Умножаем на матрицу словаря → 50K логитов. Softmax → вероятности. Берём слово с max вероятностью.',
+    desc:'h_last → RMSNorm → W_vocab → logits. P = softmax(logits/T).',
+    code:'512 → LN → таблица → 50K оценок\n→ softmax → слово',
+    active:[7,8,9], dir:'fwd', col:'#009688', viz:'output', attn:false, loss:false, bp:false, upd:false,
   },
   {
-    title:'12. Итерация — следующий кусок текста',
+    title:'11. Loss — измеряем ошибку',
+    simple:'При обучении правильный ответ известен. Cross-Entropy Loss: минимизируем штраф за неверное предсказание.',
+    desc:'L = -log P(y*|x). Gradient ∇L.',
+    code:'P("крыше") = 9.4% → L = 2.36',
+    active:[9], dir:'fwd', col:'#f44336', viz:null, attn:false, loss:true, bp:false, upd:false,
+  },
+  {
+    title:'12. Backpropagation — ищём виноватых',
+    simple:'Идём назад: Output → Final LN → FFN → … → Embedding. Цепное правило для каждого веса.',
+    desc:'∂L/∂W = ∂L/∂y · ∂y/∂W. Chain rule.',
+    code:'Output → FFN → Attn → Q/K/V → Emb',
+    active:[9,8,7,6,5,4,3,2,1,0], dir:'back', col:'#f44336', viz:null, attn:false, loss:true, bp:true, upd:false,
+  },
+  {
+    title:'13. Adam Optimizer — подкручиваем веса',
+    simple:'Adam обновляет каждый вес по градиенту. Momentum + адаптивный шаг.',
+    desc:'W ← W - lr·m̂/(√v̂+ε).',
+    code:'m = 0.9m + 0.1·∇W\nW ← W - lr·m̂/(√v̂+ε)',
+    active:[0,1,2,3,4,5,6,7,8,9], dir:'update', col:'#4CAF50', viz:null, attn:false, loss:true, bp:false, upd:true,
+  },
+  {
+    title:'14. Итерация — следующий batch',
     simple:'Один шаг обучения готов: мы обработали кусок текста, посчитали loss, backprop и обновили веса. Берём следующий batch (512–4096 токенов) и повторяем. LLaMA-3 обучали на 15 трлн токенов — миллиарды таких итераций. Модель постепенно учится предсказывать следующее слово.',
     desc:'SGD/mini-batch. Один batch ≈ 512–4096 токенов. Convergence за триллионы токенов. LLaMA-3: 15T токенов.',
     code:'Iter 1:      Loss = 2.40  ← старт\nIter 1 000:  Loss = 1.15\nIter 10 000: Loss = 0.73\nIter 100K:   Loss = 0.41  ← лучше\n\nLLaMA-3: 15 трлн токенов',
@@ -398,59 +401,59 @@ const TRAIN_STEPS = [
 const INFER_STEPS = [
   {
     title:'1. Вопрос — начало генерации',
-    simple:'Пользователь пишет вопрос. Режим инференса: модель только считает ответ, не обучается. Веса заморожены — мы их не меняем, только читаем. Нет backprop, нет обновлений. GPU просто прогоняет данные вперёд.',
-    desc:'Inference = forward pass only. Weights frozen (read-only). Нет градиентов, нет обновлений.',
-    code:'Input: "Что такое нейросеть?"\n\nВеса модели: ЗАМОРОЖЕНЫ\nGPU: только считает ответ',
+    simple:'Пользователь пишет вопрос. Режим инференса: модель только считает ответ, не обучается. Веса заморожены.',
+    desc:'Inference = forward pass only. Weights frozen.',
+    code:'Input: "Что такое нейросеть?"\n\nВеса: ЗАМОРОЖЕНЫ',
     active:[0], dir:'fwd', col:'#2196F3', viz:null, attn:false, loss:false, bp:false, upd:false,
   },
   {
-    title:'2. Токены и Embedding — слова в облако',
-    simple:'Вопрос режем на токены (слова или части). Каждый номер — lookup в таблице embedding → получаем 512 чисел, вектор-представление. Добавляем позиционную кодировку. Все токены обрабатываем параллельно — одна «пачка» входа для всех блоков.',
-    desc:'Tokenizer → token ids. E = EmbeddingTable[id] + PositionalEncoding[pos]. Параллельная обработка всех токенов.',
-    code:'"Что"   → 4821 → вектор [512]\n"такое" → 2819 → вектор [512]\n"нейро" → 8847 → вектор [512]\n"сеть"  → 3321 → вектор [512]',
-    active:[0,1], dir:'fwd', col:'#4CAF50', viz:'embedding', attn:false, loss:false, bp:false, upd:false,
+    title:'2. Токены, Embedding, Pos',
+    simple:'Токены → embedding → + позиция. E + pos. Параллельно для всех.',
+    desc:'E = EmbeddingTable[id] + PositionalEncoding[pos].',
+    code:'"Что"→4821 "такое"→2819 "нейро"→8847 "сеть"→3321',
+    active:[0,1,2], dir:'fwd', col:'#4CAF50', viz:'embedding', attn:false, loss:false, bp:false, upd:false,
   },
   {
-    title:'3. Attention — слова понимают контекст',
-    simple:'В каждом блоке слова «смотрят» друг на друга через Q, K, V. «нейро» и «сеть» получают высокий attention score — модель понимает, что они связаны. «Что» и «такое» тоже связаны. Взвешенная сумма V даёт контекстное представление: каждое слово «учитывает» важные соседи.',
-    desc:'Self-attention: Q·K^T/√d_k, causal mask. Токен i видит только j≤i. Контекст учтён через взвешенную сумму V.',
-    code:'Scores: "нейро" → "сеть" = 0.45\n\n"Что"   → [ 0.6  0.2  0.1  0.1 ]\n"нейро" → [0.05  0.1  0.5  0.35]',
-    active:[2,3], dir:'fwd', col:'#FF9800', viz:'attention', attn:true, loss:false, bp:false, upd:false,
+    title:'3. Attention — контекст',
+    simple:'Слова смотрят друг на друга. Σ α·V даёт контекст.',
+    desc:'Q·K^T/√d_k, causal mask. Σ α_j · V_j.',
+    code:'"нейро"→"сеть" = 0.45',
+    active:[3,4], dir:'fwd', col:'#FF9800', viz:'attention', attn:true, loss:false, bp:false, upd:false,
   },
   {
-    title:'4. FFN — модель вспоминает знания',
-    simple:'FFN — это «память» модели. В весах записаны паттерны: «машинное обучение», «трансформер», «градиент». Когда входные векторы «подходят» под паттерн, нейроны активируются. Исследования показывают: отдельные нейроны кодируют понятия. Модель не ищет в интернете — она «вспоминает» из весов.',
-    desc:'FFN веса — фактические знания. Активации интерпретируемы (Geva et al.). Хранит понятия в виде паттернов весов.',
-    code:'Активированные нейроны:\n• "машинное обучение"\n• "трансформер"  • "матрица весов"\n• "градиентный спуск"\n• "перцептрон"',
-    active:[3,4], dir:'fwd', col:'#9C27B0', viz:'ffn', attn:false, loss:false, bp:false, upd:false,
+    title:'4. FFN — знания',
+    simple:'FFN (SwiGLU) — «память» модели. Паттерны в весах.',
+    desc:'FFN веса — фактические знания.',
+    code:'SwiGLU: gate × silu(up)',
+    active:[5,6], dir:'fwd', col:'#9C27B0', viz:'ffn', attn:false, loss:false, bp:false, upd:false,
   },
   {
-    title:'5. Первый токен — выбор следующего слова',
-    simple:'После всех блоков — вектор 512 чисел. Умножаем на матрицу словаря → 50 000 логитов (оценок). Softmax → вероятности. Greedy: берём слово с max вероятностью. Или сэмплируем по распределению — тогда ответы разнообразнее. Temperature: выше — случайнее, ниже — стабильнее.',
-    desc:'logits = H·W_vocab. P = softmax(logits/T). Sampling: argmax или sample. Temperature T — контроль случайности.',
-    code:'512 чисел → таблица → 50 000 оценок\n→ вероятности (%)\n\n"Нейро" 28.4% ✓ | "Это" 22.1% | "Искусст" 18.7%',
-    active:[4,5], dir:'fwd', col:'#009688', viz:'output', attn:false, loss:false, bp:false, upd:false,
+    title:'5. Output — выбор слова',
+    simple:'Final LN → W_vocab → 50K логитов → softmax → слово.',
+    desc:'logits = LN(h)·W_vocab. P = softmax(logits/T).',
+    code:'"Нейро" 28.4% ✓',
+    active:[7,8,9], dir:'fwd', col:'#009688', viz:'output', attn:false, loss:false, bp:false, upd:false,
   },
   {
-    title:'6. Авторегрессия — добавляем токен',
-    simple:'Новое слово добавляем в конец контекста. Запускаем forward pass заново — но только для нового токена! K и V прошлых токенов сохраняем (KV-Cache) — не пересчитываем. Так слово за словом строится ответ. Каждый токен — один проход через модель.',
-    desc:'Autoregressive decoding: каждый токен — отдельный forward pass. KV-Cache: K,V прошлых токенов не пересчитываем. O(n²)→O(n).',
-    code:'iter 1: [Что,такое,нейро,сеть] → "Нейро"\niter 2: [..., "Нейро"] → "сеть"\niter 3: [..., "сеть"]  → "—"\n\nKV-Cache: K,V прошлых не пересчитываем',
-    active:[0,1,2,3,4,5], dir:'fwd', col:'#2196F3', viz:'kvcache', attn:false, loss:false, bp:false, upd:false,
+    title:'6. Авторегрессия — KV-Cache',
+    simple:'Новое слово в конец. Forward заново. KV-Cache: K,V прошлых не пересчитываем.',
+    desc:'Autoregressive. KV-Cache. O(n²)→O(n).',
+    code:'iter 1: [Что,такое,нейро,сеть] → "Нейро"\niter 2: [..., "Нейро"] → "сеть"\nKV-Cache',
+    active:[0,1,2,3,4,5,6,7,8,9], dir:'fwd', col:'#2196F3', viz:'kvcache', attn:false, loss:false, bp:false, upd:false,
   },
   {
-    title:'7. Контекстное окно — память разговора',
-    simple:'Модель видит весь контекст: и вопрос, и уже сгенерированный ответ. GPT-4: до 128K токенов (~100K слов). Ограничение — память и внимание O(n²). Flash Attention и подобные оптимизации позволяют обрабатывать длинные контексты эффективнее.',
-    desc:'Context window: до 128K токенов. Attention O(n²) по памяти. Flash Attention — tile-based оптимизация.',
-    code:'Context: 128K токенов ≈ 100К слов\n\n[вопрос1][ответ1][вопрос2][ответ2]...\n\nAttn: O(n²) по памяти\nFlash Attn: tile-based, ×10 быстрее',
-    active:[2,3], dir:'fwd', col:'#FF9800', viz:'attention', attn:true, loss:false, bp:false, upd:false,
+    title:'7. Контекстное окно',
+    simple:'Модель видит весь контекст. GPT-4: до 128K токенов.',
+    desc:'Context window: 128K. Flash Attention.',
+    code:'128K токенов',
+    active:[3,4], dir:'fwd', col:'#FF9800', viz:'attention', attn:true, loss:false, bp:false, upd:false,
   },
   {
-    title:'8. Ответ готов — конец генерации',
-    simple:'Модель выдаёт специальный токен EOS (end-of-sequence) — или достигаем лимита длины. Список токенов декодируем в текст. Слова собираются в ответ и отдаются пользователю. Веса модели не изменились — обучение не происходило.',
-    desc:'EOS (end-of-sequence) token. tokenizer.decode(ids) → текст. Weights unchanged.',
-    code:'"Нейросеть — это система\nмашинного обучения из слоёв\nнейронов, обрабатывающих\nданные через матем. операции."\n\n<EOS> → генерация завершена',
-    active:[5], dir:'fwd', col:'#4CAF50', viz:null, attn:false, loss:false, bp:false, upd:false,
+    title:'8. Ответ готов',
+    simple:'EOS → декодируем в текст. Веса не изменились.',
+    desc:'EOS. tokenizer.decode(ids).',
+    code:'<EOS> → готово',
+    active:[9], dir:'fwd', col:'#4CAF50', viz:null, attn:false, loss:false, bp:false, upd:false,
   },
 ];
 
@@ -470,7 +473,7 @@ let particles = [];
 
 const ATTN_TRAIN = [[0.70,0.20,0.05,0.05],[0.10,0.60,0.20,0.10],[0.05,0.15,0.65,0.15],[0.02,0.08,0.25,0.65]];
 const ATTN_INF   = [[0.60,0.20,0.10,0.10],[0.10,0.50,0.25,0.15],[0.05,0.10,0.50,0.35],[0.05,0.10,0.40,0.45]];
-const LOSS_HIST  = [2.40,2.18,1.95,1.76,1.61,1.48,1.37,1.28,2.36,2.36,1.12,0.89];
+const LOSS_HIST  = [2.40,2.18,1.95,1.76,1.61,1.48,1.37,1.28,2.36,2.36,1.12,0.89,0.72,0.58];
 
 function steps()   { return mode === 'train' ? TRAIN_STEPS : INFER_STEPS; }
 function nSteps()  { return steps().length; }
@@ -522,7 +525,7 @@ function drawBg() {
     const sepY = H * 0.55;
     ctx.save();
     ctx.strokeStyle='rgba(0,30,100,0.08)'; ctx.lineWidth=1; ctx.setLineDash([6,4]);
-    ctx.beginPath(); ctx.moveTo(20,sepY); ctx.lineTo(W*0.79-20,sepY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(20,sepY); ctx.lineTo(W*0.76-20,sepY); ctx.stroke();
     ctx.restore();
   }
 }
@@ -534,18 +537,22 @@ function drawEdges() {
   const al = curStep().active || [];
   for(let l=0;l<NUM_LAYERS-1;l++) {
     const active = al.includes(l) && al.includes(l+1);
-    const isLookup = l === 0; // TOKENS → EMBEDDING: lookup table, not weighted connections
+    const isLookup = l === 0;
+    const isAdditive = l === 1; // E + pos
+    const isPassThrough = l === 5 || l === 7 || l === 8; // Add&Norm, Final LN
     for(let i=0;i<NUM_NODES;i++) {
       for(let j=0;j<NUM_NODES;j++) {
-        if(isLookup && i !== j) continue; // 1-to-1: each token → its own embedding row
-        const w = W_SMPL[l][i][j];
+        if(isLookup && i !== j) continue;
+        if(isAdditive && i !== j) continue; // 1-to-1 для E+pos
+        const w = W_SMPL[Math.min(l, W_SMPL.length-1)][i][j];
         const alpha = active ? 0.32 : 0.10;
-        const col = isLookup
-          ? `rgba(76,175,80,${active ? 0.75 : 0.22})`
+        let col = isLookup ? `rgba(76,175,80,${active ? 0.75 : 0.22})`
+          : isAdditive ? `rgba(93,138,102,${active ? 0.6 : 0.2})`
+          : isPassThrough ? `rgba(138,152,176,${alpha})`
           : (w>0 ? `rgba(33,150,243,${alpha})` : `rgba(233,30,99,${alpha})`);
         ctx.save();
-        if(isLookup && active) { ctx.setLineDash([6,3]); }
-        ctx.strokeStyle=col; ctx.lineWidth = active ? (isLookup ? 2 : 1.1) : 0.6;
+        if((isLookup || isAdditive) && active) { ctx.setLineDash([6,3]); }
+        ctx.strokeStyle=col; ctx.lineWidth = active ? (isLookup || isAdditive ? 2 : 1.1) : 0.6;
         ctx.beginPath(); ctx.moveTo(lx(l),ny(i)); ctx.lineTo(lx(l+1),ny(j)); ctx.stroke();
         ctx.setLineDash([]);
         ctx.restore();
@@ -559,22 +566,31 @@ function drawEdges() {
 // ═══════════════════════════════════════════════════════
 function drawWeightHints() {
   const al = curStep().active || [];
+  const sd = curStep();
+
+  // Шаг 2 (Embedding): подпись «→ вектор [512]» у выхода EMBEDDING
+  if(step === 1 && al.includes(1)) {
+    const ex = lx(1) + 18, ey = (ny(0)+ny(NUM_NODES-1))/2;
+    ctx.save();
+    ctx.font='bold 7.5px Orbitron,monospace'; ctx.textAlign='left';
+    ctx.fillStyle='rgba(76,175,80,0.9)';
+    ctx.fillText('→ вектор [512]', ex, ey);
+    ctx.restore();
+  }
+
   for(let l=0;l<NUM_LAYERS-1;l++) {
     if(!al.includes(l) || !al.includes(l+1)) continue;
 
     if(l === 0) {
-      // TOKENS → EMBEDDING: lookup, not weighted multiplication
-      // Show "table[id]" label on each 1-to-1 connection
-      const toks = mode==='infer' ? TOK_INFER : TOK_TRAIN;
       const ids = mode==='infer' ? [4821,2819,8847,3321] : [2847,9134,421,6623];
       const mx = (lx(0)+lx(1))/2;
       for(let j=0;j<NUM_NODES;j++) {
         const my = (ny(j)+ny(j))/2; // midpoint on diagonal connection
         ctx.save();
         ctx.fillStyle='rgba(240,250,245,0.95)'; ctx.shadowBlur=3; ctx.shadowColor='rgba(76,175,80,0.15)';
-        ctx.fillRect(mx-24,my-8,48,16);
+        ctx.fillRect(mx-22,my-7,44,14);
         ctx.shadowBlur=0;
-        ctx.font='bold 8px JetBrains Mono,monospace';
+        ctx.font='bold 7.5px JetBrains Mono,monospace';
         ctx.textAlign='center'; ctx.textBaseline='middle';
         ctx.fillStyle='#2e7d4f';
         ctx.fillText(`[${ids[j]}]`, mx, my);
@@ -584,51 +600,98 @@ function drawWeightHints() {
       ctx.save();
       ctx.font='bold 7.5px Orbitron,monospace';
       ctx.textAlign='center'; ctx.fillStyle='rgba(76,175,80,0.75)';
-      ctx.fillText('LOOKUP', (lx(0)+lx(1))/2, ny(0)-22);
+      ctx.fillText('LOOKUP', (lx(0)+lx(1))/2, ny(0)-20);
       ctx.restore();
       continue;
     }
 
-    // EMBEDDING → Q/K/V: вектор в скобках, внутри блока — веса Wq, Wk, Wv
     if(l === 1) {
       const mx = (lx(1)+lx(2))/2, my = (ny(0)+ny(NUM_NODES-1))/2;
-      const vecStr = '[0.34, -0.12, 0.78, 0.41, ...]';
       ctx.save();
-      ctx.font='bold 7.5px Orbitron,monospace';
-      ctx.textAlign='center'; ctx.fillStyle='rgba(76,175,80,0.9)';
-      ctx.fillText('вектор x от embedding', mx, ny(0)-22);
-      ctx.restore();
-      ctx.save();
-      ctx.fillStyle='rgba(240,250,245,0.95)'; ctx.shadowBlur=3; ctx.shadowColor='rgba(76,175,80,0.2)';
-      ctx.fillRect(mx-52,my-10,104,20);
-      ctx.shadowBlur=0; ctx.font='9px JetBrains Mono,monospace';
+      ctx.fillStyle='rgba(240,250,245,0.95)'; ctx.shadowBlur=3; ctx.shadowColor='rgba(93,138,102,0.2)';
+      ctx.fillRect(mx-28,my-8,56,16);
+      ctx.shadowBlur=0; ctx.font='bold 8px JetBrains Mono,monospace';
       ctx.textAlign='center'; ctx.textBaseline='middle';
       ctx.fillStyle='#2e7d4f';
-      ctx.fillText(vecStr, mx, my);
+      ctx.fillText('E + pos', mx, my);
       ctx.restore();
-      // Внутри блока (Q/K/V): веса Wq, Wk, Wv
-      const blockX = lx(2);
-      const blockY = ny(NUM_NODES-1) + 14;
       ctx.save();
-      ctx.font='bold 7px Orbitron,monospace'; ctx.textAlign='center';
-      ctx.fillStyle='rgba(255,152,0,0.9)';
-      ctx.fillText('× Wq  × Wk  × Wv', blockX, blockY);
+      ctx.font='bold 6.5px Orbitron,monospace';
+      ctx.textAlign='center'; ctx.fillStyle='rgba(93,138,102,0.9)';
+      ctx.fillText('additive', (lx(1)+lx(2))/2, ny(0)-18);
       ctx.restore();
       continue;
     }
 
-    for(let j=0;j<NUM_NODES;j++) {
-      const w = W_SMPL[l][0][j];
-      const mx = (lx(l)+lx(l+1))/2+4, my = (ny(0)+ny(j))/2;
+    if(l === 2) {
+      const mx = (lx(2)+lx(3))/2, my = (ny(0)+ny(NUM_NODES-1))/2;
       ctx.save();
-      ctx.fillStyle='rgba(255,255,255,0.92)'; ctx.shadowBlur=3; ctx.shadowColor='rgba(0,0,0,0.1)';
-      ctx.fillRect(mx-17,my-7,34,14);
-      ctx.shadowBlur=0; ctx.font='bold 9px JetBrains Mono,monospace';
+      ctx.fillStyle='rgba(240,250,245,0.95)'; ctx.shadowBlur=3; ctx.shadowColor='rgba(76,175,80,0.2)';
+      ctx.fillRect(mx-40,my-8,80,16);
+      ctx.shadowBlur=0; ctx.font='8px JetBrains Mono,monospace';
       ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.fillStyle = w>0 ? '#0066cc' : '#cc2244';
-      ctx.fillText(w.toFixed(2),mx,my);
+      ctx.fillStyle='#2e7d4f';
+      ctx.fillText('[0.34, -0.12, ...]', mx, my);
       ctx.restore();
+      const blockX = lx(3), blockY = ny(NUM_NODES-1) + 12;
+      ctx.save();
+      ctx.font='bold 6.5px Orbitron,monospace'; ctx.textAlign='center';
+      ctx.fillStyle='rgba(255,152,0,0.9)';
+      ctx.fillText('× Wq Wk Wv', blockX, blockY);
+      ctx.restore();
+      continue;
     }
+
+    if(l === 4) {
+      const mx = (lx(4)+lx(5))/2, my = (ny(0)+ny(NUM_NODES-1))/2;
+      ctx.save();
+      ctx.fillStyle='rgba(255,240,245,0.95)'; ctx.shadowBlur=3; ctx.shadowColor='rgba(233,30,99,0.2)';
+      ctx.fillRect(mx-36,my-7,72,14);
+      ctx.shadowBlur=0; ctx.font='bold 7.5px JetBrains Mono,monospace';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillStyle='#c2185b';
+      ctx.fillText('Σ α·V', mx, my);
+      ctx.restore();
+      continue;
+    }
+
+    if(l === 5 || l === 7 || l === 8) {
+      const mx = (lx(l)+lx(l+1))/2, my = (ny(0)+ny(NUM_NODES-1))/2;
+      const lbl = l===8 ? 'LN' : 'Add+Norm';
+      ctx.save();
+      ctx.fillStyle='rgba(248,248,250,0.95)'; ctx.shadowBlur=2; ctx.shadowColor='rgba(138,152,176,0.2)';
+      ctx.fillRect(mx-28,my-7,56,14);
+      ctx.shadowBlur=0; ctx.font='bold 7px Orbitron,monospace';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillStyle='#6a7a90';
+      ctx.fillText(lbl, mx, my);
+      ctx.restore();
+      continue;
+    }
+
+    if(l === 6) {
+      const mx = (lx(6)+lx(7))/2, my = (ny(0)+ny(NUM_NODES-1))/2;
+      ctx.save();
+      ctx.fillStyle='rgba(248,240,255,0.95)'; ctx.shadowBlur=3; ctx.shadowColor='rgba(156,39,176,0.2)';
+      ctx.fillRect(mx-32,my-7,64,14);
+      ctx.shadowBlur=0; ctx.font='bold 7.5px JetBrains Mono,monospace';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillStyle='#7b1fa2';
+      ctx.fillText('SwiGLU', mx, my);
+      ctx.restore();
+      continue;
+    }
+
+    const w = W_SMPL[Math.min(l, W_SMPL.length-1)][0][0];
+    const mx = (lx(l)+lx(l+1))/2+4, my = (ny(0)+ny(0))/2;
+    ctx.save();
+    ctx.fillStyle='rgba(255,255,255,0.92)'; ctx.shadowBlur=3; ctx.shadowColor='rgba(0,0,0,0.1)';
+    ctx.fillRect(mx-15,my-7,30,14);
+    ctx.shadowBlur=0; ctx.font='bold 8px JetBrains Mono,monospace';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillStyle = w>0 ? '#0066cc' : '#cc2244';
+    ctx.fillText(w.toFixed(2),mx,my);
+    ctx.restore();
   }
 }
 
@@ -750,8 +813,8 @@ function drawModeLabel() {
 // ═══════════════════════════════════════════════════════
 function drawArchPanel() {
   const sd  = curStep();
-  const px  = W * 0.80, py = 12;
-  const pw  = W * 0.19 - 8, ph = H - 24;
+  const px  = W * 0.78, py = 12;
+  const pw  = W * 0.21 - 8, ph = H - 24;
 
   ctx.save();
   ctx.fillStyle='rgba(255,255,255,0.95)'; ctx.shadowBlur=8; ctx.shadowColor='rgba(0,0,0,0.07)';
@@ -806,13 +869,14 @@ function drawArchPanel() {
 
   const blocks = [
     { label:'ATTENTION',  desc:'слова смотрят\nдруг на друга',      col:'#E91E63', key:'attn' },
+    { label:'Add & Norm', desc:'вход+выход\nLayerNorm',             col:'#8a98b0', key:'addnorm' },
     { label:'FFN',        desc:'нейроны\n«думают» о словах',         col:'#9C27B0', key:'ffn' },
   ];
 
   const bh = Math.min((ph - y + py - 50) / blocks.length - 4, 50);
   for(const b of blocks) {
-    const isAttnActive = b.key==='attn' && sd.active && (sd.active.includes(2)||sd.active.includes(3));
-    const isFfnActive  = b.key==='ffn'  && sd.active && sd.active.includes(4);
+    const isAttnActive = b.key==='attn' && sd.active && (sd.active.includes(3)||sd.active.includes(4));
+    const isFfnActive  = b.key==='ffn'  && sd.active && sd.active.includes(6);
     const hl = isAttnActive || isFfnActive;
     ctx.fillStyle = hl ? rgba(b.col,0.15) : 'rgba(0,30,100,0.03)';
     ctx.fillRect(px+8,y,pw-16,bh);
@@ -824,7 +888,7 @@ function drawArchPanel() {
     const lines=b.desc.split('\n');
     ctx.font='8px Inter,sans-serif'; ctx.fillStyle=hl?rgba(b.col,0.85):'#8a98b0';
     lines.forEach((l,li)=>ctx.fillText(l,cx,y+13+12*(li+1)));
-    if(b.key==='attn') {
+    if(b.key==='attn' || b.key==='addnorm') {
       ctx.strokeStyle='rgba(0,30,100,0.15)'; ctx.lineWidth=1; ctx.setLineDash([3,3]);
       ctx.beginPath(); ctx.moveTo(cx,y+bh); ctx.lineTo(cx,y+bh+4); ctx.stroke();
       ctx.setLineDash([]);
@@ -1390,9 +1454,10 @@ function drawTwoBlocksViz() {
   const midY = blockY + bh / 2;
 
   const comps = [
-    { label:'Q / K / V', sub:'Wq·X,  Wk·X,  Wv·X', col:'#FF9800' },
-    { label:'ATTENTION',  sub:'QKᵀ/√d → V + Add&Norm', col:'#E91E63' },
-    { label:'FFN',        sub:'ReLU(x·W₁)·W₂ + Norm', col:'#9C27B0' },
+    { label:'Q / K / V', sub:'Wq·X, Wk·X, Wv·X', col:'#FF9800' },
+    { label:'ATTENTION',  sub:'QKᵀ/√d → Σ α·V', col:'#E91E63' },
+    { label:'ADD & NORM', sub:'RMSNorm, residual', col:'#8a98b0' },
+    { label:'FFN',        sub:'SwiGLU + Add&Norm', col:'#9C27B0' },
   ];
   const compPad = 6;
   const compH = (bh - 28 - (comps.length-1)*4) / comps.length;
@@ -1520,10 +1585,10 @@ function drawStepVisual() {
 // ═══════════════════════════════════════════════════════
 function drawBlockRepeat() {
   const al = curStep().active || [];
-  const blockActive = al.some(i => i >= 2 && i <= 4);
+  const blockActive = al.some(i => i >= 3 && i <= 7);
 
-  const bx1 = lx(2) - 26;
-  const bx2 = lx(4) + 26;
+  const bx1 = lx(3) - 20;
+  const bx2 = lx(7) + 20;
   const by1 = ny(0) - 38;
   const by2 = ny(NUM_NODES - 1) + 26;
   const bw  = bx2 - bx1;
@@ -1562,8 +1627,8 @@ function drawBlockRepeat() {
 
   // Loop arrow: FFN → Q/K/V (below nodes)
   const arrowY = by2 + 12;
-  const ax1    = lx(4);
-  const ax2    = lx(2);
+  const ax1    = lx(7);
+  const ax2    = lx(3);
   const spaceOk = !hasViz() ? true : arrowY < H * 0.50;
   if (spaceOk) {
     const aOpacity = blockActive ? 0.7 : 0.3;
@@ -1643,7 +1708,7 @@ function animate(ts) {
   drawWeightHints();
   drawNodes();
   const sd=curStep();
-  if(mode==='train' && step>=7) drawLossChart();
+  if(mode==='train' && step>=10) drawLossChart();
   drawBackprop();
   drawWeightUpdate();
   drawModeLabel();

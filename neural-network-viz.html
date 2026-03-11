@@ -322,9 +322,9 @@ const TRAIN_STEPS = [
   },
   {
     title:'4. Q, K, V — три роли каждого слова',
-    simple:'В блок приходят векторы (E + pos). Внутри блока матрицы Wq, Wk, Wv. Умножаем вектор на каждую — получаем Q, K, V. Q — «что ищу?», K — «что предлагаю?», V — «моё содержимое».',
+    simple:'Каждое слово (вектор 512 чисел) умножаем на три матрицы Wq, Wk, Wv. Получаем три вектора: Q — «что ищу?» (запрос для сравнения), K — «чем отвечаю?» (ключ для поиска), V — «что несу?» (содержимое). Attention сравнивает Q с K, чтобы найти важных, потом берёт взвешенную сумму их V.',
     desc:'Q = X·Wq, K = X·Wk, V = X·Wv. Три линейные проекции. d=512, d_k=64 на голову.',
-    code:'Q = X · Wq  K = X · Wk  V = X · Wv\n\nWq, Wk, Wv: матрицы [512 × 64]',
+    code:'Q = X·Wq   K = X·Wk   V = X·Wv\n\nQ·K → важность  →  Σ α·V → контекст',
     active:[2,3], dir:'fwd', col:'#FF9800', viz:'qkv', attn:false, loss:false, bp:false, upd:false,
   },
   {
@@ -1043,7 +1043,7 @@ function drawEmbeddingCloud() {
 // VIZ: QKV LIBRARY ANALOGY
 // ═══════════════════════════════════════════════════════
 function drawQKVAnalogy() {
-  const ax=20, ay=H*0.56, aw=W-40, ah=H*0.40;
+  const ax=20, ay=H*0.54, aw=W-40, ah=H*0.44;
   ctx.save();
   ctx.fillStyle='rgba(255,255,255,0.96)'; ctx.shadowBlur=8; ctx.shadowColor='rgba(0,0,0,0.07)';
   roundRect(ctx,ax,ay,aw,ah,8); ctx.fill(); ctx.shadowBlur=0;
@@ -1051,16 +1051,48 @@ function drawQKVAnalogy() {
   roundRect(ctx,ax,ay,aw,ah,8); ctx.stroke();
 
   ctx.font='bold 9px Orbitron,monospace'; ctx.textAlign='center'; ctx.fillStyle='#FF9800';
-  ctx.fillText('Q / K / V — АНАЛОГИЯ: БИБЛИОТЕКА',ax+aw/2,ay+16);
+  ctx.fillText('Q / K / V — ЧТО ЭТО И ЗАЧЕМ',ax+aw/2,ay+16);
+  ctx.font='8px Inter,sans-serif'; ctx.fillStyle='#8a98b0'; ctx.textAlign='center';
+  ctx.fillText('Каждое слово умножаем на 3 матрицы → получаем 3 вектора. Они нужны, чтобы слова «находили» друг друга и обменивались информацией.',ax+aw/2,ay+28);
 
-  const colW = aw/3 - 10, rowY=ay+35, rowH=ah-50;
+  const colW = aw/3 - 10, rowY=ay+42, rowH=ah-58, pad=10, lh=11;
   const cols = [
     { letter:'Q', title:'QUERY — Запрос', color:'#2196F3',
-      lines:['«Что я ищу?»','','Токен "крыша" пишет','запрос в каталог:','«я — часть здания,','ищу животных рядом!»','','= числовой вектор Q'] },
+      lines:[
+        '«Что я ищу?»',
+        '',
+        'Числовой вектор-запрос. Каждое слово умножает свой вектор на Wq и получает Q.',
+        '',
+        'С этим Q слово спрашивает другие: «кто из вас мне релевантен?»',
+        '',
+        'В Attention Q текущего слова сравнивают с K всех остальных. Скаляр Q·K — оценка «насколько подходишь». Чем больше — тем важнее.',
+        '',
+        'Без Q модель не могла бы решить, на какие слова смотреть.'
+      ] },
     { letter:'K', title:'KEY — Ключ', color:'#FF9800',
-      lines:['«Что я предлагаю?»','','Токен "Кот" говорит:','«я — животное,','я живу на крышах!»','','Похожесть Q·K =','оценка внимания'] },
+      lines:[
+        '«Чем я могу ответить?»',
+        '',
+        'Вектор-описание (умножение на Wk). «Визитка» слова — по ней тебя находят.',
+        '',
+        'Другие сравнивают свой Q с твоим K. Если Q и K похожи — скаляр Q·K большой. Значит, ты релевантен.',
+        '',
+        'Аналогия: K как ключевые слова в каталоге. По ним ищут нужную книгу.',
+        '',
+        'У каждого слова свой K. Вместе — «каталог» для поиска.'
+      ] },
     { letter:'V', title:'VALUE — Значение', color:'#4CAF50',
-      lines:['«Что я несу в себе?»','','Токен "Кот" содержит','всю информацию','о себе как токене','','Высокое Q·K →','берём V "Кота"'] },
+      lines:[
+        '«Что я несу?»',
+        '',
+        'Содержимое слова (умножение на Wv). V — то, что реально возьмём в контекст.',
+        '',
+        'Q·K дают веса α (важность). Потом взвешенная сумма Σ α·V. Важные слова вносят больший вклад.',
+        '',
+        'Q и K — только для «поиска». V несёт информацию. Без разделения модель не могла бы гибко комбинировать контекст.',
+        '',
+        'Итог: контекстное представление для следующего слоя.'
+      ] },
   ];
   for(let i=0;i<3;i++) {
     const c=cols[i], cx2=ax+5+i*(colW+10), cy2=rowY;
@@ -1070,8 +1102,21 @@ function drawQKVAnalogy() {
     ctx.fillText(c.letter,cx2+colW/2,cy2+35);
     ctx.font='bold 8px Orbitron,monospace'; ctx.fillStyle=c.color;
     ctx.fillText(c.title,cx2+colW/2,cy2+52);
-    ctx.font='10px Inter,sans-serif'; ctx.fillStyle='#4a5870';
-    c.lines.forEach((l,li)=>ctx.fillText(l,cx2+colW/2,cy2+68+li*13));
+    ctx.font='9.5px Inter,sans-serif'; ctx.textAlign='left'; ctx.fillStyle='#4a5870';
+    const maxW = colW - pad*2;
+    let y = cy2+68;
+    c.lines.forEach((line)=>{
+      if(!line) { y+=lh; return; }
+      const words = line.split(' ');
+      let cur = '';
+      for(const w of words) {
+        const test = cur ? cur+' '+w : w;
+        if(ctx.measureText(test).width > maxW && cur) {
+          ctx.fillText(cur,cx2+pad,y); y+=lh; cur=w;
+        } else cur = cur ? cur+' '+w : w;
+      }
+      if(cur) { ctx.fillText(cur,cx2+pad,y); y+=lh; }
+    });
   }
   ctx.restore();
 }

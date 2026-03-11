@@ -731,8 +731,11 @@ function drawBackprop() {
 // ═══════════════════════════════════════════════════════
 function drawWeightUpdate() {
   if(!curStep().upd) return;
+  // Только слои с матрицами весов на связях: Q/K/V, FFN, Output
+  // Пропускаем: Token→Emb (lookup, не умножение), E+pos (additive), Attn, Add&Norm
+  const WEIGHT_LAYERS = [2, 6, 8]; // Q/K/V, FFN, Output
   ctx.save();
-  for(let l=0;l<NUM_LAYERS-1;l++) {
+  for(const l of WEIGHT_LAYERS) {
     const phase = animTime*3.5 - l*0.6;
     if(phase < 0) continue;
     const a = 0.5+0.5*Math.sin(phase*2.5);

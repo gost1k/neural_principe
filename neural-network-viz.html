@@ -1,0 +1,1662 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Нейросеть изнутри — визуальное пособие</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html, body { height:100%; background:#eef0f6; color:#1a2438; font-family:'Inter',sans-serif; overflow:hidden; }
+body { display:flex; flex-direction:column; }
+
+/* ── HEADER ── */
+.hdr {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:8px 20px; background:#fff; border-bottom:1px solid #dde2ec;
+  flex-shrink:0; box-shadow:0 1px 4px rgba(0,0,0,0.07);
+}
+.hdr-title { font-family:'Orbitron',monospace; font-size:12px; color:#0077cc; letter-spacing:3px; }
+.mode-btns { display:flex; gap:6px; }
+.mbtn {
+  padding:4px 14px; border:1px solid #d0d6e2; background:#fff;
+  color:#7a8aa0; font-size:12px; font-weight:500; cursor:pointer; border-radius:4px; transition:all .2s;
+}
+.mbtn.active { border-color:#0077cc; color:#0077cc; background:#e8f4ff; }
+.mbtn:hover:not(.active) { border-color:#aab; color:#445; }
+
+/* ── TOP PANEL ── */
+.top-panel {
+  flex-shrink:0; display:flex; align-items:stretch;
+  background:#fff; border-bottom:2px solid #dde2ec;
+  height:128px; box-shadow:0 2px 8px rgba(0,0,0,0.06);
+}
+.tp-left {
+  display:flex; flex-direction:column; justify-content:center;
+  padding:10px 18px; gap:4px; border-right:1px solid #e8ebf2;
+  min-width:220px; flex-shrink:0;
+}
+.tp-step { font-size:11px; color:#aab5c8; letter-spacing:2px; font-weight:500; }
+.tp-title { font-family:'Orbitron',monospace; font-size:12px; color:#cc7700; line-height:1.4; font-weight:700; }
+
+.tp-center { flex:1; display:flex; flex-direction:column; padding:10px 16px; gap:6px; justify-content:center; border-right:1px solid #e8ebf2; }
+
+.tp-simple-row {
+  display:flex; align-items:flex-start; gap:8px;
+  background:#f2fbf2; border-left:3px solid #4CAF50; padding:6px 10px; border-radius:0 4px 4px 0;
+}
+.tp-simple-icon { font-size:13px; flex-shrink:0; margin-top:1px; }
+.tp-simple-text { font-size:13px; line-height:1.6; color:#1a3a1a; font-weight:500; }
+
+.tp-tech-row { display:flex; align-items:flex-start; gap:8px; padding:0 2px; }
+.tp-tech-icon { font-size:11px; flex-shrink:0; color:#8a98b0; margin-top:2px; }
+.tp-tech-text { font-size:11px; line-height:1.65; color:#6a7a90; }
+
+.tp-code {
+  padding:10px 14px; display:flex; align-items:center;
+  font-family:'JetBrains Mono',monospace; font-size:10.5px; color:#006633;
+  line-height:1.8; white-space:pre; min-width:250px; max-width:290px;
+  flex-shrink:0; background:#f0faf5; border-left:3px solid #00a060;
+}
+
+/* ── CANVAS ── */
+.main { flex:1; min-height:0; overflow:hidden; position:relative; background:#f0f2f8; }
+#c { display:block; }
+
+/* ── BOTTOM PANEL ── */
+.bot-panel {
+  flex-shrink:0; position:relative; height:88px;
+  background:#fff; border-top:2px solid #dde2ec;
+  box-shadow:0 -2px 6px rgba(0,0,0,0.05); overflow:hidden;
+}
+.li {
+  position:absolute; top:0; bottom:0; width:160px;
+  display:flex; flex-direction:column; justify-content:center; align-items:center;
+  text-align:center; padding:0 4px; transform:translateX(-50%);
+  pointer-events:none; transition:all .3s;
+}
+.li-name {
+  font-family:'Orbitron',monospace; font-size:8.5px; letter-spacing:1.5px;
+  margin-bottom:4px; white-space:nowrap; font-weight:700; opacity:0.35; transition:opacity .3s;
+}
+.li-line { font-size:10px; color:#8a98b0; line-height:1.55; }
+.li.active .li-name { opacity:1; text-shadow: 0 0 8px currentColor; }
+.li.active .li-line { color:#3a4a60; }
+
+/* ── CONTROLS ── */
+.ctrl {
+  flex-shrink:0; display:flex; align-items:center; gap:8px;
+  padding:7px 16px; background:#fff; border-top:1px solid #dde2ec;
+}
+.cbtn {
+  padding:5px 13px; border:1px solid #d0d6e2; background:#fff;
+  color:#4a5870; font-size:12px; font-weight:500; cursor:pointer;
+  transition:all .15s; flex-shrink:0; border-radius:4px;
+}
+.cbtn:hover { border-color:#0077cc; color:#0077cc; background:#e8f4ff; }
+.cbtn.pri { border-color:#0077cc; color:#fff; background:#0077cc; }
+.cbtn.pri:hover { background:#0066bb; }
+.cbtn:disabled { opacity:0.35; cursor:default; }
+.prog { flex:1; height:3px; background:#e8ebf2; border-radius:2px; overflow:hidden; }
+.prog-fill { height:100%; background:linear-gradient(90deg,#0077cc,#00a060); transition:width .3s; }
+.spd-lbl { font-size:11px; color:#8a98b0; flex-shrink:0; }
+input[type=range] { accent-color:#0077cc; width:70px; flex-shrink:0; cursor:pointer; }
+.leg { display:flex; gap:10px; flex-shrink:0; }
+.leg-i { display:flex; align-items:center; gap:4px; font-size:10.5px; color:#8a98b0; }
+.leg-d { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+
+/* ── ARCH STRIP ── */
+.arch-strip {
+  flex-shrink:0; display:flex; align-items:center; gap:0;
+  padding:0 16px; height:38px;
+  background:#fafbfd; border-bottom:1px solid #dde2ec;
+}
+.as-title {
+  font-family:'Orbitron',monospace; font-size:7.5px; color:#0077cc;
+  letter-spacing:1.5px; white-space:nowrap; line-height:1.4;
+  padding-right:14px; border-right:1px solid #e8ebf2; margin-right:14px; flex-shrink:0;
+}
+.as-models {
+  display:flex; align-items:center; gap:10px;
+  padding-right:14px; border-right:1px solid #e8ebf2; margin-right:14px; flex-shrink:0;
+}
+.as-model { display:flex; align-items:center; gap:5px; font-size:10px; color:#4a5870; white-space:nowrap; }
+.as-dot { width:9px; height:9px; border-radius:2px; flex-shrink:0; }
+.as-block { display:flex; align-items:center; gap:7px; flex-wrap:nowrap; }
+.as-badge {
+  padding:2px 7px; border-radius:3px; font-size:8.5px;
+  font-weight:600; font-family:'Orbitron',monospace; white-space:nowrap;
+}
+.as-repeat { font-family:'JetBrains Mono',monospace; font-size:10px; color:#cc7700; font-weight:700; }
+.as-note { font-size:9px; color:#9aabb8; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-title">Нейросеть изнутри — визуальное пособие</div>
+  <div class="mode-btns">
+    <button class="mbtn active" id="btnTrain">⚡ Обучение</button>
+    <button class="mbtn" id="btnInfer">→ Инференс (ответ)</button>
+  </div>
+</div>
+
+<!-- TOP PANEL: 2-level explanation -->
+<div class="top-panel">
+  <div class="tp-left">
+    <div class="tp-step" id="pStep">ШАГ 1 / 12</div>
+    <div class="tp-title" id="pTitle">Токенизация</div>
+  </div>
+  <div class="tp-center">
+    <div class="tp-simple-row">
+      <span class="tp-simple-icon">💡</span>
+      <span class="tp-simple-text" id="pSimple"></span>
+    </div>
+    <div class="tp-tech-row">
+      <span class="tp-tech-icon">⚙️</span>
+      <span class="tp-tech-text" id="pDesc"></span>
+    </div>
+  </div>
+  <div class="tp-code" id="pCode"></div>
+</div>
+
+<!-- ARCH STRIP -->
+<div class="arch-strip">
+  <div class="as-title">КАК УСТРОЕНА<br>НЕЙРОСЕТЬ</div>
+  <div class="as-models">
+    <span class="as-model"><span class="as-dot" style="background:#4CAF50"></span>GPT-2: 117 млн</span>
+    <span class="as-model"><span class="as-dot" style="background:#2196F3"></span>LLaMA-3: 70 млрд</span>
+    <span class="as-model"><span class="as-dot" style="background:#FF9800"></span>GPT-3: 175 млрд</span>
+    <span class="as-model"><span class="as-dot" style="background:#9C27B0"></span>GPT-4: ~1.8 трлн</span>
+  </div>
+  <div class="as-block">
+    <span style="font-size:8px;color:#8a98b0;font-family:'Orbitron',monospace;white-space:nowrap">1 БЛОК =</span>
+    <span class="as-badge" style="background:rgba(233,30,99,0.1);color:#E91E63;border:1px solid rgba(233,30,99,0.25)">ATTENTION</span>
+    <span style="color:#ccc;font-size:12px">+</span>
+    <span class="as-badge" style="background:rgba(156,39,176,0.1);color:#9C27B0;border:1px solid rgba(156,39,176,0.25)">FFN</span>
+    <span class="as-repeat">↻ × 32–120 раз</span>
+    <span class="as-note">= вся глубина трансформера</span>
+  </div>
+</div>
+
+<!-- CANVAS -->
+<div class="main" id="mainWrap"><canvas id="c"></canvas></div>
+
+<!-- BOTTOM PANEL: layer glossary -->
+<div class="bot-panel" id="botPanel">
+  <div class="li" id="li-0">
+    <div class="li-name" style="color:#2196F3">ТОКЕНЫ</div>
+    <div class="li-line">слова → номера</div>
+    <div class="li-line">словарь ~50 000</div>
+    <div class="li-line">все сразу, не по одному</div>
+  </div>
+  <div class="li" id="li-1">
+    <div class="li-name" style="color:#4CAF50">EMBEDDING</div>
+    <div class="li-line">номер → 512 чисел</div>
+    <div class="li-line">«координаты» в облаке смыслов</div>
+    <div class="li-line">+ позиция в тексте</div>
+  </div>
+  <div class="li" id="li-2">
+    <div class="li-name" style="color:#FF9800">Q / K / V</div>
+    <div class="li-line">Q = «что ищу?»</div>
+    <div class="li-line">K = «что предлагаю?»</div>
+    <div class="li-line">V = «моё содержимое»</div>
+  </div>
+  <div class="li" id="li-3">
+    <div class="li-name" style="color:#E91E63">ATTENTION</div>
+    <div class="li-line">каждое слово смотрит на все предыдущие</div>
+    <div class="li-line">важные слова получают больший вес</div>
+    <div class="li-line">8 «голов» — разные аспекты</div>
+  </div>
+  <div class="li" id="li-4">
+    <div class="li-name" style="color:#9C27B0">FFN</div>
+    <div class="li-line">нейрон: сумма входов × веса</div>
+    <div class="li-line">ReLU отсекает негативное</div>
+    <div class="li-line">2048 нейронов в слое</div>
+  </div>
+  <div class="li" id="li-5">
+    <div class="li-name" style="color:#009688">OUTPUT</div>
+    <div class="li-line">512 чисел → таблица → 50K оценок</div>
+    <div class="li-line">вероятности (%)</div>
+    <div class="li-line">слово с самым большим %</div>
+  </div>
+</div>
+
+<!-- CONTROLS -->
+<div class="ctrl">
+  <button class="cbtn" id="btnBack" disabled>← НАЗАД</button>
+  <button class="cbtn pri" id="btnPlay">▶ PLAY</button>
+  <button class="cbtn" id="btnStep">ВПЕРЁД →</button>
+  <button class="cbtn" id="btnReset" style="margin-left:4px">↺</button>
+  <div class="prog"><div class="prog-fill" id="progFill" style="width:8%"></div></div>
+  <div class="leg">
+    <div class="leg-i"><div class="leg-d" style="background:#2196F3"></div>Прямой проход</div>
+    <div class="leg-i"><div class="leg-d" style="background:#f44336"></div>Обратный / Loss</div>
+    <div class="leg-i"><div class="leg-d" style="background:#4CAF50"></div>Обновление весов</div>
+    <div class="leg-i"><div class="leg-d" style="background:#FF9800"></div>Внимание</div>
+  </div>
+  <span class="spd-lbl">Скорость:</span>
+  <input type="range" id="speed" min="0.3" max="3" step="0.3" value="1">
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// CANVAS SETUP
+// ═══════════════════════════════════════════════════════
+const canvas = document.getElementById('c');
+const ctx    = canvas.getContext('2d');
+let W, H;
+
+function resize() {
+  const wrap = document.getElementById('mainWrap');
+  W = canvas.width  = wrap.clientWidth;
+  H = canvas.height = wrap.clientHeight;
+  positionBottomItems();
+}
+window.addEventListener('resize', resize);
+
+// ═══════════════════════════════════════════════════════
+// LAYOUT  — nodes in upper portion, viz in lower
+// ═══════════════════════════════════════════════════════
+const NUM_LAYERS = 6;
+const NUM_NODES  = 4;
+const TOK_TRAIN = ['Кот','сидит','на','крыше'];
+const TOK_INFER = ['Что','такое','нейро','сеть'];
+
+// When a bottom visualization is shown, nodes use only top portion
+function hasViz() { return !!curStep().viz; }
+
+function ny(j) {
+  if (hasViz()) {
+    const top = 44, span = Math.min(H * 0.50, 260);
+    const sp  = span / (NUM_NODES + 1);
+    return top + sp * (j + 1);
+  }
+  const span = H * 0.62, sp = span / (NUM_NODES + 1);
+  return H * 0.50 - span / 2 + sp * (j + 1);
+}
+
+function lx(i) {
+  const ml = W * 0.07, mr = W * 0.04;
+  return ml + (W - ml - mr) * (i / (NUM_LAYERS - 1));
+}
+
+function positionBottomItems() {
+  if (!W) return;
+  for (let i = 0; i < NUM_LAYERS; i++) {
+    const el = document.getElementById('li-' + i);
+    if (el) el.style.left = lx(i) + 'px';
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// LAYER META
+// ═══════════════════════════════════════════════════════
+const LAYER_META = [
+  { name:'ТОКЕНЫ',    sub:'~50К слов',    col:'#2196F3' },
+  { name:'EMBEDDING', sub:'512-dim',       col:'#4CAF50' },
+  { name:'Q / K / V', sub:'Attn proj.',    col:'#FF9800' },
+  { name:'ATTENTION', sub:'8 голов',       col:'#E91E63' },
+  { name:'FFN',       sub:'2048 нейрон',   col:'#9C27B0' },
+  { name:'OUTPUT',    sub:'50К логитов',   col:'#009688' },
+];
+
+const W_SMPL = [
+  [[ 0.34, 0.12,-0.67, 0.89],[ 0.21,-0.45, 0.77,-0.33],[ 0.56, 0.82,-0.19, 0.44],[-0.71, 0.38, 0.62,-0.55]],
+  [[ 0.41,-0.29, 0.58, 0.73],[ 0.85,-0.62, 0.19,-0.47],[ 0.33, 0.66,-0.81, 0.12],[-0.54, 0.97,-0.28, 0.65]],
+  [[ 0.67, 0.28,-0.44, 0.83],[ 0.31,-0.75, 0.92,-0.18],[ 0.59, 0.47,-0.63, 0.24],[-0.82, 0.16, 0.74,-0.39]],
+  [[ 0.53,-0.37, 0.68, 0.22],[ 0.79, 0.44,-0.56, 0.31],[ 0.16,-0.88, 0.43,-0.67],[ 0.94,-0.21, 0.77, 0.48]],
+  [[ 0.42, 0.73,-0.29, 0.61],[ 0.85,-0.54, 0.38,-0.72],[ 0.27, 0.96,-0.47, 0.13],[-0.63, 0.35, 0.82,-0.44]],
+];
+
+// ═══════════════════════════════════════════════════════
+// STEPS DATA — each has simple + desc (technical) + viz
+// ═══════════════════════════════════════════════════════
+const TRAIN_STEPS = [
+  {
+    title:'1. Токенизация — жетоны текста',
+    simple:'Текст режем на кусочки — слова или части слов. Каждому кусочку даём свой номер, как штрих-код в магазине.',
+    desc:'BPE (Byte Pair Encoding): текст → последовательность токенов. EmbeddingTable[id] — lookup по индексу. Все токены загружаются параллельно (batch).',
+    code:'["Кот","сидит","на","крыше"]\n→ [2847,  9134,  421,  6623]\n\nСловарь: ~50 000 токенов',
+    active:[0], dir:'fwd', col:'#2196F3', viz:null, attn:false, loss:false, bp:false, upd:false,
+  },
+  {
+    title:'2. Embedding — облако смыслов',
+    simple:'Каждый номер превращается в 512 чисел — как координаты точки. Похожие слова оказываются рядом, разные — далеко.',
+    desc:'E = EmbeddingTable[id] + PositionalEncoding[pos]. Вектор 512-dim. Семантическое пространство: cosine similarity между векторами ≈ смысловая близость.',
+    code:'2847 → [0.34, -0.12, 0.78, 0.41, ...]\n            └── 512 чисел-координат',
+    active:[0,1], dir:'fwd', col:'#4CAF50', viz:'embedding', attn:false, loss:false, bp:false, upd:false,
+  },
+  {
+    title:'3. Q, K, V — три роли каждого слова',
+    simple:'Представь библиотеку: Q — твой запрос в каталог, K — заголовки книг, V — что внутри. Каждое слово одновременно и спрашивает, и отвечает.',
+    desc:'Q = X·Wq, K = X·Wk, V = X·Wv. Три линейные проекции, обучаемые веса Wq,Wk,Wv ∈ ℝ^{d×d_k}. d=512, d_k=64 на голову.',
+    code:'Q = X · Wq  ← "что я ищу?"\nK = X · Wk  ← "что я предлагаю?"\nV = X · Wv  ← "моё содержимое"\n\nWq, Wk, Wv: матрицы [512 × 64]',
+    active:[1,2], dir:'fwd', col:'#FF9800', viz:'qkv', attn:false, loss:false, bp:false, upd:false,
+  },
+  {
+    title:'4. Attention — кто на кого смотрит',
+    simple:'Слово "крыша" спрашивает: "кто мне важен?" "Кот" — очень (0.65), "на" — меньше (0.08). Каждое слово смотрит только на то, что было раньше.',
+    desc:'Score(i,j) = Q_i·K_j^T / √d_k. Causal mask: attention только на j≤i. Softmax → веса α. Output = Σ α_j · V_j. Multi-head: 8 голов, concat.',
+    code:'Score = Q · Kᵀ / √64\n\n"крыша"→"Кот"  : 0.65 ← сильно\n"крыша"→"сидит": 0.25 ← средне\n"крыша"→"на"   : 0.08 ← слабо',
+    active:[2,3], dir:'fwd', col:'#FF9800', viz:'attention', attn:true, loss:false, bp:false, upd:false,
+  },
+  {
+    title:'5. FFN — нейроны «думают» о словах',
+    simple:'Нейрон берёт числа от соседей, умножает на свои веса, всё складывает. Если сумма положительная — передаёт дальше, иначе — ноль.',
+    desc:'FFN(x) = ReLU(x·W₁+b₁)·W₂+b₂. W₁: d→4d (512→2048), W₂: 4d→d. ReLU(z)=max(0,z). Хранит фактические знания в весах.',
+    code:'out = ReLU(x·W₁ + b₁) · W₂ + b₂\n\nW₁: [512 → 2048]  ← расширяем\nW₂: [2048 → 512]  ← сужаем\nReLU(x) = max(0, x)  ← порог',
+    active:[3,4], dir:'fwd', col:'#9C27B0', viz:'ffn', attn:false, loss:false, bp:false, upd:false,
+  },
+  {
+    title:'6. Трансформер-блок — и таких МНОГО',
+    simple:'Один блок = Attention + FFN. Таких блоков десятки. Каждый следующий «думает» глубже о смысле.',
+    desc:'Transformer Block = Multi-Head Attention + LayerNorm + FFN + LayerNorm. Residual connections. Стек из N блоков. Ранние — синтаксис, поздние — семантика.',
+    code:'GPT-2:   12 блоков,  117 млн параметров\nGPT-3:   96 блоков,  175 млрд параметров\nLLaMA-3 70B: 80 блоков, 70 млрд параметров\nGPT-4:  ~120 блоков, ~1.8 трлн (оценка)',
+    active:[2,3,4], dir:'fwd', col:'#FF9800', viz:'twoBlocks', attn:false, loss:false, bp:false, upd:false,
+  },
+  {
+    title:'7. Output — выбор следующего слова',
+    simple:'Последние 512 чисел умножаем на большую таблицу — получаем оценку для каждого из 50 000 слов. Превращаем в проценты. Берём слово с самым большим процентом.',
+    desc:'logits = H·W_vocab, H∈ℝ^d, W_vocab∈ℝ^{d×|V|}. P = softmax(logits/T). Sampling: argmax (greedy) или сэмплирование по P. Temperature T управляет случайностью.',
+    code:'512 чисел → таблица → 50 000 оценок\n→ вероятности (%)\n\n"матом" 28.4% ✓ | "на" 18.7% | "рядом" 9.4%',
+    active:[4,5], dir:'fwd', col:'#009688', viz:'output', attn:false, loss:false, bp:false, upd:false,
+  },
+  {
+    title:'8. Loss — измеряем ошибку',
+    simple:'Правильный ответ мы знаем. Считаем, насколько модель промахнулась. Если нужному слову дали 9% вместо 100% — это плохо.',
+    desc:'Cross-Entropy: L = -log P(y*|x). Минимизируем L. Gradient ∇L распространяется на все параметры.',
+    code:'L = -log P(y*|x)\n\nПравильный: "крыше"\nP("крыше") = 9.4% → L = 2.36\n\nЦель: P → 1, L → 0',
+    active:[5], dir:'fwd', col:'#f44336', viz:null, attn:false, loss:true, bp:false, upd:false,
+  },
+  {
+    title:'9. Backpropagation — ищём виноватых',
+    simple:'Идём назад по всем шагам и спрашиваем: "кто виноват?" Каждый вес получает число — насколько он повлиял на ошибку.',
+    desc:'Chain rule: ∂L/∂W = ∂L/∂y · ∂y/∂W. Градиенты вычисляются от Output к Embedding. Каждый из 175B параметров получает свой ∇W.',
+    code:'∂L/∂W = ∂L/∂y · ∂y/∂W\n\nOutput → FFN → Attention → Embedding\n\nChain rule: градиент каждого веса',
+    active:[5,4,3,2,1,0], dir:'back', col:'#f44336', viz:null, attn:false, loss:true, bp:true, upd:false,
+  },
+  {
+    title:'10. Adam Optimizer — подкручиваем веса',
+    simple:'Каждый вес чуть-чуть сдвигается в сторону уменьшения ошибки. Алгоритм помнит, как веса менялись раньше, и подстраивает шаг.',
+    desc:'m_t = β₁m_{t-1} + (1-β₁)g_t (momentum), v_t = β₂v_{t-1} + (1-β₂)g_t². W ← W - lr·m̂_t/(√v̂_t+ε). Адаптивный learning rate.',
+    code:'m = 0.9m + 0.1·∇W\nv = 0.999v + 0.001·∇W²\n\nW ← W - lr·m̂/(√v̂ + ε)',
+    active:[0,1,2,3,4,5], dir:'update', col:'#4CAF50', viz:null, attn:false, loss:true, bp:false, upd:true,
+  },
+  {
+    title:'12. Итерация — следующий кусок текста',
+    simple:'Один шаг готов. Берём следующий кусок текста и повторяем. Миллиарды таких шагов — модель постепенно учится.',
+    desc:'SGD/mini-batch. Один batch ≈ 512–4096 токенов. Convergence за триллионы токенов. LLaMA-3: 15T токенов.',
+    code:'Iter 1:      Loss = 2.40  ← старт\nIter 1 000:  Loss = 1.15\nIter 10 000: Loss = 0.73\nIter 100K:   Loss = 0.41  ← лучше\n\nLLaMA-3: 15 трлн токенов',
+    active:[], dir:'fwd', col:'#2196F3', viz:null, attn:false, loss:true, bp:false, upd:false,
+  },
+];
+
+const INFER_STEPS = [
+  {
+    title:'1. Вопрос — начало генерации',
+    simple:'Пользователь пишет вопрос. Модель только считает ответ — не учится. Веса не трогаем.',
+    desc:'Inference = forward pass only. Weights frozen (read-only). Нет градиентов, нет обновлений.',
+    code:'Input: "Что такое нейросеть?"\n\nВеса модели: ЗАМОРОЖЕНЫ\nGPU: только считает ответ',
+    active:[0], dir:'fwd', col:'#2196F3', viz:null, attn:false, loss:false, bp:false, upd:false,
+  },
+  {
+    title:'2. Токены и Embedding — слова в облако',
+    simple:'Вопрос режем на кусочки, каждый превращаем в 512 чисел — точку в облаке. Все слова обрабатываем сразу.',
+    desc:'Tokenizer → token ids. E = EmbeddingTable[id] + PositionalEncoding[pos]. Параллельная обработка всех токенов.',
+    code:'"Что"   → 4821 → вектор [512]\n"такое" → 2819 → вектор [512]\n"нейро" → 8847 → вектор [512]\n"сеть"  → 3321 → вектор [512]',
+    active:[0,1], dir:'fwd', col:'#4CAF50', viz:'embedding', attn:false, loss:false, bp:false, upd:false,
+  },
+  {
+    title:'3. Attention — слова понимают контекст',
+    simple:'"нейро" и "сеть" сильно смотрят друг на друга — они связаны. Модель понимает, что вместе это "нейросеть".',
+    desc:'Self-attention: Q·K^T/√d_k, causal mask. Токен i видит только j≤i. Контекст учтён через взвешенную сумму V.',
+    code:'Scores: "нейро" → "сеть" = 0.45\n\n"Что"   → [ 0.6  0.2  0.1  0.1 ]\n"нейро" → [0.05  0.1  0.5  0.35]',
+    active:[2,3], dir:'fwd', col:'#FF9800', viz:'attention', attn:true, loss:false, bp:false, upd:false,
+  },
+  {
+    title:'4. FFN — модель вспоминает знания',
+    simple:'Здесь «записаны» знания из обучения. Нейроны «вспоминают» нужные понятия и активируются.',
+    desc:'FFN веса — фактические знания. Активации интерпретируемы (Geva et al.). Хранит понятия в виде паттернов весов.',
+    code:'Активированные нейроны:\n• "машинное обучение"\n• "трансформер"  • "матрица весов"\n• "градиентный спуск"\n• "перцептрон"',
+    active:[3,4], dir:'fwd', col:'#9C27B0', viz:'ffn', attn:false, loss:false, bp:false, upd:false,
+  },
+  {
+    title:'5. Первый токен — выбор следующего слова',
+    simple:'Последние 512 чисел умножаем на таблицу — получаем оценку для каждого слова. Превращаем в проценты. Берём слово с самым большим.',
+    desc:'logits = H·W_vocab. P = softmax(logits/T). Sampling: argmax или sample. Temperature T — контроль случайности.',
+    code:'512 чисел → таблица → 50 000 оценок\n→ вероятности (%)\n\n"Нейро" 28.4% ✓ | "Это" 22.1% | "Искусст" 18.7%',
+    active:[4,5], dir:'fwd', col:'#009688', viz:'output', attn:false, loss:false, bp:false, upd:false,
+  },
+  {
+    title:'6. Авторегрессия — добавляем токен',
+    simple:'Новое слово добавляем в конец. Запускаем весь процесс заново! Так слово за словом строится ответ.',
+    desc:'Autoregressive decoding: каждый токен — отдельный forward pass. KV-Cache: K,V прошлых токенов не пересчитываем. O(n²)→O(n).',
+    code:'iter 1: [Что,такое,нейро,сеть] → "Нейро"\niter 2: [..., "Нейро"] → "сеть"\niter 3: [..., "сеть"]  → "—"\n\nKV-Cache: K,V прошлых не пересчитываем',
+    active:[0,1,2,3,4,5], dir:'fwd', col:'#2196F3', viz:'kvcache', attn:false, loss:false, bp:false, upd:false,
+  },
+  {
+    title:'7. Контекстное окно — память разговора',
+    simple:'Модель видит весь разговор — и вопросы, и ответы. GPT-4 помнит до 128 000 слов сразу.',
+    desc:'Context window: до 128K токенов. Attention O(n²) по памяти. Flash Attention — tile-based оптимизация.',
+    code:'Context: 128K токенов ≈ 100К слов\n\n[вопрос1][ответ1][вопрос2][ответ2]...\n\nAttn: O(n²) по памяти\nFlash Attn: tile-based, ×10 быстрее',
+    active:[2,3], dir:'fwd', col:'#FF9800', viz:'attention', attn:true, loss:false, bp:false, upd:false,
+  },
+  {
+    title:'8. Ответ готов — конец генерации',
+    simple:'Специальный знак останавливает генерацию. Слова собираются в текст и отдаются пользователю. Веса модели не изменились.',
+    desc:'EOS (end-of-sequence) token. tokenizer.decode(ids) → текст. Weights unchanged.',
+    code:'"Нейросеть — это система\nмашинного обучения из слоёв\nнейронов, обрабатывающих\nданные через матем. операции."\n\n<EOS> → генерация завершена',
+    active:[5], dir:'fwd', col:'#4CAF50', viz:null, attn:false, loss:false, bp:false, upd:false,
+  },
+];
+
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+let mode      = 'train';
+let step      = 0;
+let isPlaying = false;
+let speedMult = 1;
+let animTime  = 0;
+let lastTs    = null;
+let stepTimer = 0;
+
+let nodeGlow = Array.from({length:NUM_LAYERS}, () => new Float32Array(NUM_NODES));
+let particles = [];
+
+const ATTN_TRAIN = [[0.70,0.20,0.05,0.05],[0.10,0.60,0.20,0.10],[0.05,0.15,0.65,0.15],[0.02,0.08,0.25,0.65]];
+const ATTN_INF   = [[0.60,0.20,0.10,0.10],[0.10,0.50,0.25,0.15],[0.05,0.10,0.50,0.35],[0.05,0.10,0.40,0.45]];
+const LOSS_HIST  = [2.40,2.18,1.95,1.76,1.61,1.48,1.37,1.28,2.36,2.36,1.12,0.89];
+
+function steps()   { return mode === 'train' ? TRAIN_STEPS : INFER_STEPS; }
+function nSteps()  { return steps().length; }
+function curStep() { return steps()[step] || {}; }
+
+function rgba(h, a) {
+  const r=parseInt(h.slice(1,3),16), g=parseInt(h.slice(3,5),16), b=parseInt(h.slice(5,7),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+// ═══════════════════════════════════════════════════════
+// PARTICLE
+// ═══════════════════════════════════════════════════════
+class Pulse {
+  constructor(l1,l2,n1,n2,col,delay=0) {
+    Object.assign(this,{l1,l2,n1,n2,col,delay,t:-delay,done:false});
+  }
+  update(dt) { this.t += dt; if(this.t >= 1) this.done = true; }
+  get p() { return Math.max(0, Math.min(1, this.t)); }
+  draw(ctx) {
+    if(this.t < 0) return;
+    const x1=lx(this.l1),y1=ny(this.n1),x2=lx(this.l2),y2=ny(this.n2);
+    const p=this.p, x=x1+(x2-x1)*p, y=y1+(y2-y1)*p;
+    ctx.save();
+    ctx.shadowBlur=10; ctx.shadowColor=this.col;
+    for(let i=5;i>=0;i--) {
+      const tp=Math.max(0,p-i*0.04);
+      const tx=x1+(x2-x1)*tp, ty=y1+(y2-y1)*tp;
+      ctx.globalAlpha = i===0 ? 1 : (1-i/6)*0.25;
+      ctx.beginPath(); ctx.arc(tx,ty,i===0?4:3*(1-i/6),0,Math.PI*2);
+      ctx.fillStyle=this.col; ctx.fill();
+    }
+    ctx.restore();
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// DRAW: BACKGROUND
+// ═══════════════════════════════════════════════════════
+function drawBg() {
+  ctx.fillStyle='#f0f2f8'; ctx.fillRect(0,0,W,H);
+  ctx.save(); ctx.strokeStyle='rgba(0,30,100,0.05)'; ctx.lineWidth=1;
+  for(let x=0;x<W;x+=50){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for(let y=0;y<H;y+=50){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+  ctx.restore();
+
+  // Separator when viz is shown
+  if(hasViz()) {
+    const sepY = H * 0.55;
+    ctx.save();
+    ctx.strokeStyle='rgba(0,30,100,0.08)'; ctx.lineWidth=1; ctx.setLineDash([6,4]);
+    ctx.beginPath(); ctx.moveTo(20,sepY); ctx.lineTo(W*0.79-20,sepY); ctx.stroke();
+    ctx.restore();
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// DRAW: EDGES
+// ═══════════════════════════════════════════════════════
+function drawEdges() {
+  const al = curStep().active || [];
+  for(let l=0;l<NUM_LAYERS-1;l++) {
+    const active = al.includes(l) && al.includes(l+1);
+    const isLookup = l === 0; // TOKENS → EMBEDDING: lookup table, not weighted connections
+    for(let i=0;i<NUM_NODES;i++) {
+      for(let j=0;j<NUM_NODES;j++) {
+        if(isLookup && i !== j) continue; // 1-to-1: each token → its own embedding row
+        const w = W_SMPL[l][i][j];
+        const alpha = active ? 0.32 : 0.10;
+        const col = isLookup
+          ? `rgba(76,175,80,${active ? 0.75 : 0.22})`
+          : (w>0 ? `rgba(33,150,243,${alpha})` : `rgba(233,30,99,${alpha})`);
+        ctx.save();
+        if(isLookup && active) { ctx.setLineDash([6,3]); }
+        ctx.strokeStyle=col; ctx.lineWidth = active ? (isLookup ? 2 : 1.1) : 0.6;
+        ctx.beginPath(); ctx.moveTo(lx(l),ny(i)); ctx.lineTo(lx(l+1),ny(j)); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+      }
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// DRAW: WEIGHT LABELS
+// ═══════════════════════════════════════════════════════
+function drawWeightHints() {
+  const al = curStep().active || [];
+  for(let l=0;l<NUM_LAYERS-1;l++) {
+    if(!al.includes(l) || !al.includes(l+1)) continue;
+
+    if(l === 0) {
+      // TOKENS → EMBEDDING: lookup, not weighted multiplication
+      // Show "table[id]" label on each 1-to-1 connection
+      const toks = mode==='infer' ? TOK_INFER : TOK_TRAIN;
+      const ids = mode==='infer' ? [4821,2819,8847,3321] : [2847,9134,421,6623];
+      const mx = (lx(0)+lx(1))/2;
+      for(let j=0;j<NUM_NODES;j++) {
+        const my = (ny(j)+ny(j))/2; // midpoint on diagonal connection
+        ctx.save();
+        ctx.fillStyle='rgba(240,250,245,0.95)'; ctx.shadowBlur=3; ctx.shadowColor='rgba(76,175,80,0.15)';
+        ctx.fillRect(mx-24,my-8,48,16);
+        ctx.shadowBlur=0;
+        ctx.font='bold 8px JetBrains Mono,monospace';
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillStyle='#2e7d4f';
+        ctx.fillText(`[${ids[j]}]`, mx, my);
+        ctx.restore();
+      }
+      // "LOOKUP" label above the connections
+      ctx.save();
+      ctx.font='bold 7.5px Orbitron,monospace';
+      ctx.textAlign='center'; ctx.fillStyle='rgba(76,175,80,0.75)';
+      ctx.fillText('LOOKUP', (lx(0)+lx(1))/2, ny(0)-22);
+      ctx.restore();
+      continue;
+    }
+
+    for(let j=0;j<NUM_NODES;j++) {
+      const w = W_SMPL[l][0][j];
+      const mx = (lx(l)+lx(l+1))/2+4, my = (ny(0)+ny(j))/2;
+      ctx.save();
+      ctx.fillStyle='rgba(255,255,255,0.92)'; ctx.shadowBlur=3; ctx.shadowColor='rgba(0,0,0,0.1)';
+      ctx.fillRect(mx-17,my-7,34,14);
+      ctx.shadowBlur=0; ctx.font='bold 9px JetBrains Mono,monospace';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillStyle = w>0 ? '#0066cc' : '#cc2244';
+      ctx.fillText(w.toFixed(2),mx,my);
+      ctx.restore();
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// DRAW: NODES
+// ═══════════════════════════════════════════════════════
+function drawNodes() {
+  const sd=curStep(), al=sd.active||[];
+  const toks = mode==='infer' ? TOK_INFER : TOK_TRAIN;
+  for(let l=0;l<NUM_LAYERS;l++) {
+    const m=LAYER_META[l], active=al.includes(l), X=lx(l);
+    for(let i=0;i<NUM_NODES;i++) {
+      const Y=ny(i), gw=nodeGlow[l][i];
+      ctx.save();
+      if(gw>0.05){ ctx.shadowBlur=16*gw; ctx.shadowColor=m.col; }
+      if(active||gw>0.1) {
+        ctx.beginPath(); ctx.arc(X,Y,15+gw*4,0,Math.PI*2);
+        ctx.strokeStyle=rgba(m.col,0.15+gw*0.2); ctx.lineWidth=1.5; ctx.stroke();
+      }
+      ctx.beginPath(); ctx.arc(X,Y,10,0,Math.PI*2);
+      ctx.fillStyle=rgba(m.col, active?0.18+gw*0.1:0.07);
+      ctx.fill();
+      ctx.strokeStyle=rgba(m.col, active?0.95:0.4); ctx.lineWidth=active?2:1.2; ctx.stroke();
+      ctx.font='bold 9px Inter,sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      if(l===0) { ctx.fillStyle=active?m.col:'#9aabb8'; ctx.fillText(toks[i],X,Y); }
+      else       { ctx.fillStyle=active?m.col:'#b0bfcc'; ctx.fillText(i+1,X,Y); }
+      ctx.restore();
+    }
+    const topY = ny(0) - (hasViz() ? 32 : 38);
+    ctx.save(); ctx.textAlign='center';
+    ctx.font='bold 8.5px Orbitron,monospace';
+    ctx.fillStyle=active?m.col:rgba(m.col,0.32);
+    if(active){ ctx.shadowBlur=5; ctx.shadowColor=m.col; }
+    ctx.fillText(m.name,X,topY); ctx.shadowBlur=0;
+    ctx.font='8px Inter,sans-serif';
+    ctx.fillStyle=active?'#3a4a60':'#9aabb8';
+    ctx.fillText(m.sub,X,topY+12);
+    ctx.restore();
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// DRAW: BACKPROP ARROWS
+// ═══════════════════════════════════════════════════════
+function drawBackprop() {
+  if(!curStep().bp) return;
+  const y = ny(2) + 28;
+  ctx.save(); ctx.setLineDash([5,4]);
+  ctx.strokeStyle='rgba(244,67,54,0.5)'; ctx.lineWidth=2.5;
+  ctx.shadowBlur=4; ctx.shadowColor='rgba(244,67,54,0.4)';
+  for(let l=NUM_LAYERS-2;l>=0;l--) {
+    ctx.beginPath(); ctx.moveTo(lx(l+1),y); ctx.lineTo(lx(l)+14,y); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(lx(l)+14,y-5); ctx.lineTo(lx(l)+2,y); ctx.lineTo(lx(l)+14,y+5); ctx.stroke();
+    ctx.setLineDash([5,4]);
+  }
+  ctx.restore();
+}
+
+// ═══════════════════════════════════════════════════════
+// DRAW: WEIGHT UPDATE SPARKLES
+// ═══════════════════════════════════════════════════════
+function drawWeightUpdate() {
+  if(!curStep().upd) return;
+  ctx.save();
+  for(let l=0;l<NUM_LAYERS-1;l++) {
+    const phase = animTime*3.5 - l*0.6;
+    if(phase < 0) continue;
+    const a = 0.5+0.5*Math.sin(phase*2.5);
+    ctx.globalAlpha = a*0.7;
+    ctx.font='bold 9px JetBrains Mono,monospace'; ctx.fillStyle='#00a060'; ctx.textAlign='center';
+    ctx.fillText(`Δ${Math.abs(W_SMPL[l][0][0]*0.003).toFixed(4)}`,(lx(l)+lx(l+1))/2, ny(1)-18);
+  }
+  ctx.restore();
+}
+
+// ═══════════════════════════════════════════════════════
+// DRAW: LOSS CHART
+// ═══════════════════════════════════════════════════════
+function drawLossChart() {
+  const cw=150,ch=72,cx=14,cy=H-ch-14;
+  ctx.save();
+  ctx.fillStyle='rgba(255,255,255,0.97)'; ctx.shadowBlur=5; ctx.shadowColor='rgba(0,0,0,0.07)';
+  ctx.fillRect(cx,cy,cw,ch); ctx.shadowBlur=0;
+  ctx.strokeStyle='rgba(244,67,54,0.22)'; ctx.lineWidth=1; ctx.strokeRect(cx,cy,cw,ch);
+  ctx.font='bold 8px Orbitron,monospace'; ctx.fillStyle='#cc2244'; ctx.textAlign='left';
+  ctx.fillText('LOSS',cx+7,cy+13);
+  const data = LOSS_HIST.slice(0,step+1);
+  if(data.length<2){ctx.restore();return;}
+  const pad=18,mx=2.5,mn=0.5;
+  ctx.strokeStyle='#f44336'; ctx.lineWidth=1.5; ctx.shadowBlur=3; ctx.shadowColor='rgba(244,67,54,0.4)';
+  ctx.beginPath();
+  data.forEach((v,idx)=>{
+    const px=cx+pad+(idx/(data.length-1))*(cw-pad*2);
+    const py=cy+ch-pad-((v-mn)/(mx-mn))*(ch-pad*2);
+    idx===0?ctx.moveTo(px,py):ctx.lineTo(px,py);
+  });
+  ctx.stroke();
+  ctx.font='bold 10px JetBrains Mono,monospace'; ctx.fillStyle='#f44336';
+  ctx.textAlign='right'; ctx.shadowBlur=0;
+  ctx.fillText(data[data.length-1].toFixed(2),cx+cw-5,cy+ch-5);
+  ctx.restore();
+}
+
+// ═══════════════════════════════════════════════════════
+// DRAW: MODE LABEL
+// ═══════════════════════════════════════════════════════
+function drawModeLabel() {
+  ctx.save();
+  const txt = mode==='train'?'⚡ TRAINING':'→ INFERENCE';
+  const col = mode==='train'?'#0077cc':'#009688';
+  ctx.font='bold 9px Orbitron,monospace'; ctx.fillStyle=col; ctx.textAlign='left';
+  ctx.fillText(txt,14,16);
+  ctx.restore();
+}
+
+// ═══════════════════════════════════════════════════════
+// DRAW: ARCHITECTURE PANEL (right side, always visible)
+// ═══════════════════════════════════════════════════════
+function drawArchPanel() {
+  const sd  = curStep();
+  const px  = W * 0.80, py = 12;
+  const pw  = W * 0.19 - 8, ph = H - 24;
+
+  ctx.save();
+  ctx.fillStyle='rgba(255,255,255,0.95)'; ctx.shadowBlur=8; ctx.shadowColor='rgba(0,0,0,0.07)';
+  roundRect(ctx, px, py, pw, ph, 8); ctx.fill(); ctx.shadowBlur=0;
+  ctx.strokeStyle='rgba(0,30,100,0.1)'; ctx.lineWidth=1.5;
+  roundRect(ctx, px, py, pw, ph, 8); ctx.stroke();
+
+  const cx = px + pw/2;
+  let y = py + 16;
+
+  ctx.textAlign='center';
+  ctx.font='bold 8.5px Orbitron,monospace'; ctx.fillStyle='#0077cc';
+  ctx.fillText('КАК УСТРОЕНА',cx,y); y+=13;
+  ctx.fillText('НЕЙРОСЕТЬ',cx,y); y+=18;
+
+  // Scale bars (log)
+  const models = [
+    { name:'GPT-2',   params:117e6,   col:'#4CAF50', note:'117 млн' },
+    { name:'LLaMA-3', params:70e9,    col:'#2196F3', note:'70 млрд' },
+    { name:'GPT-3',   params:175e9,   col:'#FF9800', note:'175 млрд' },
+    { name:'GPT-4',   params:1800e9,  col:'#9C27B0', note:'~1.8 трлн' },
+  ];
+  const maxLog = Math.log10(1800e9);
+  const minLog = Math.log10(117e6);
+  ctx.font='bold 7.5px Orbitron,monospace'; ctx.fillStyle='#8a98b0'; ctx.textAlign='center';
+  ctx.fillText('ПАРАМЕТРЫ',cx,y); y+=10;
+  ctx.font='7px Inter,sans-serif'; ctx.fillStyle='#aab5c8';
+  ctx.fillText('(чем больше — тем умнее)',cx,y); y+=12;
+
+  for(const m of models) {
+    const logP = Math.log10(m.params);
+    const ratio = (logP-minLog)/(maxLog-minLog);
+    const barW = Math.round((pw-20)*ratio);
+    const isAct = sd.active && sd.active.length>0;
+    ctx.fillStyle=rgba(m.col,0.15); ctx.fillRect(px+8,y,pw-16,18);
+    ctx.fillStyle=rgba(m.col,0.85); ctx.fillRect(px+8,y,barW,18);
+    ctx.font='bold 8px Inter,sans-serif'; ctx.fillStyle='#fff'; ctx.textAlign='left';
+    ctx.fillText(m.name,px+12,y+12);
+    ctx.textAlign='right'; ctx.fillStyle=m.col;
+    ctx.fillText(m.note,px+pw-6,y+12);
+    y += 22;
+  }
+
+  y += 6;
+  ctx.strokeStyle='rgba(0,30,100,0.08)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(px+10,y); ctx.lineTo(px+pw-10,y); ctx.stroke();
+  y += 12;
+
+  // Block structure — simple language
+  ctx.font='bold 8px Orbitron,monospace'; ctx.textAlign='center'; ctx.fillStyle='#cc7700';
+  ctx.fillText('1 БЛОК ТРАНСФОРМЕРА',cx,y); y+=13;
+
+  const blocks = [
+    { label:'ATTENTION',  desc:'слова смотрят\nдруг на друга',      col:'#E91E63', key:'attn' },
+    { label:'FFN',        desc:'нейроны\n«думают» о словах',         col:'#9C27B0', key:'ffn' },
+  ];
+
+  const bh = Math.min((ph - y + py - 50) / blocks.length - 4, 50);
+  for(const b of blocks) {
+    const isAttnActive = b.key==='attn' && sd.active && (sd.active.includes(2)||sd.active.includes(3));
+    const isFfnActive  = b.key==='ffn'  && sd.active && sd.active.includes(4);
+    const hl = isAttnActive || isFfnActive;
+    ctx.fillStyle = hl ? rgba(b.col,0.15) : 'rgba(0,30,100,0.03)';
+    ctx.fillRect(px+8,y,pw-16,bh);
+    ctx.strokeStyle = hl ? rgba(b.col,0.5) : 'rgba(0,30,100,0.12)';
+    ctx.lineWidth = hl ? 1.5 : 0.8;
+    ctx.strokeRect(px+8,y,pw-16,bh);
+    ctx.font=`bold 8.5px Orbitron,monospace`; ctx.textAlign='center'; ctx.fillStyle=hl?b.col:'#4a5870';
+    ctx.fillText(b.label,cx,y+13);
+    const lines=b.desc.split('\n');
+    ctx.font='8px Inter,sans-serif'; ctx.fillStyle=hl?rgba(b.col,0.85):'#8a98b0';
+    lines.forEach((l,li)=>ctx.fillText(l,cx,y+13+12*(li+1)));
+    if(b.key==='attn') {
+      ctx.strokeStyle='rgba(0,30,100,0.15)'; ctx.lineWidth=1; ctx.setLineDash([3,3]);
+      ctx.beginPath(); ctx.moveTo(cx,y+bh); ctx.lineTo(cx,y+bh+4); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    y += bh+4;
+  }
+  y += 8;
+  ctx.font='bold 9px Inter,sans-serif'; ctx.textAlign='center'; ctx.fillStyle='#cc7700';
+  ctx.fillText('↻  × 80 раз (LLaMA-3 70B)',cx,y);
+
+  ctx.restore();
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y); ctx.closePath();
+}
+
+// ═══════════════════════════════════════════════════════
+// VIZ: EMBEDDING CLOUD (semantic space)
+// ═══════════════════════════════════════════════════════
+function drawEmbeddingCloud() {
+  const ax=20, ay=H*0.56, aw=W-40, ah=H*0.40;
+  ctx.save();
+  ctx.fillStyle='rgba(255,255,255,0.96)'; ctx.shadowBlur=8; ctx.shadowColor='rgba(0,0,0,0.07)';
+  roundRect(ctx,ax,ay,aw,ah,8); ctx.fill(); ctx.shadowBlur=0;
+  ctx.strokeStyle='rgba(76,175,80,0.3)'; ctx.lineWidth=1.5;
+  roundRect(ctx,ax,ay,aw,ah,8); ctx.stroke();
+
+  ctx.font='bold 9px Orbitron,monospace'; ctx.textAlign='center'; ctx.fillStyle='#4CAF50';
+  ctx.fillText('ПРОСТРАНСТВО СМЫСЛОВ (Embedding Space)',ax+aw/2,ay+15);
+  ctx.font='8px Inter,sans-serif'; ctx.fillStyle='#8a98b0';
+  ctx.fillText('Слова — точки. Похожие слова — рядом. Разные — далеко.',ax+aw/2,ay+28);
+
+  const iw=aw-40, ih=ah-48;
+  const ox=ax+20, oy=ay+36;
+
+  // Cluster bubbles (с центрами для связей)
+  const clusters = [
+    { x:0.17, y:0.42, rx:0.12, ry:0.24, col:'#2196F3', label:'животные' },
+    { x:0.52, y:0.60, rx:0.11, ry:0.20, col:'#FF9800', label:'действия' },
+    { x:0.72, y:0.35, rx:0.10, ry:0.22, col:'#9C27B0', label:'место' },
+    { x:0.35, y:0.25, rx:0.10, ry:0.18, col:'#009688', label:'предметы' },
+  ];
+  const clusterCenters = clusters.map(cl => ({ x: ox+cl.x*iw, y: oy+cl.y*ih }));
+
+  // Связи между кластерами (семантически связанные — животные↔место, действия↔место, предметы↔место)
+  const clusterLinks = [
+    [0, 2], [1, 2], [2, 3], [0, 1],  // животные-место, действия-место, место-предметы, животные-действия
+  ];
+  ctx.strokeStyle='rgba(100,120,160,0.12)'; ctx.lineWidth=1; ctx.setLineDash([6,5]);
+  for(const [i,j] of clusterLinks) {
+    const c1=clusterCenters[i], c2=clusterCenters[j];
+    ctx.beginPath(); ctx.moveTo(c1.x,c1.y); ctx.lineTo(c2.x,c2.y); ctx.stroke();
+  }
+  ctx.setLineDash([]);
+
+  for(const cl of clusters) {
+    const cxp=ox+cl.x*iw, cyp=oy+cl.y*ih;
+    ctx.beginPath(); ctx.ellipse(cxp,cyp,cl.rx*iw,cl.ry*ih,0,0,Math.PI*2);
+    ctx.fillStyle=rgba(cl.col,0.07); ctx.fill();
+    ctx.strokeStyle=rgba(cl.col,0.22); ctx.lineWidth=1.2; ctx.setLineDash([4,3]); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.font='bold 8px Inter,sans-serif'; ctx.textAlign='center'; ctx.fillStyle=rgba(cl.col,0.7);
+    ctx.fillText(cl.label, cxp, cyp - cl.ry*ih - 4);
+  }
+
+  // Далёкие серые кластеры (есть в пространстве, но далеко)
+  const farClusters = [
+    { x:0.92, y:0.08, rx:0.08, ry:0.12, words:['идея','время','число','понятие','миг','суть'] },
+    { x:0.05, y:0.88, rx:0.07, ry:0.10, words:['радость','страх','гнев','грусть','любовь','счастье'] },
+    { x:0.88, y:0.82, rx:0.07, ry:0.09, words:['закон','формула','теорема','правило','аксиома','доказательство'] },
+  ];
+  const grayCol = '#9aabb8';
+  for(const fc of farClusters) {
+    const fcx=ox+fc.x*iw, fcy=oy+fc.y*ih;
+    ctx.beginPath(); ctx.ellipse(fcx,fcy,fc.rx*iw,fc.ry*ih,0,0,Math.PI*2);
+    ctx.fillStyle=rgba(grayCol,0.04); ctx.fill();
+    ctx.strokeStyle=rgba(grayCol,0.15); ctx.lineWidth=0.8; ctx.setLineDash([3,4]); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.font='7px Inter,sans-serif'; ctx.textAlign='center'; ctx.fillStyle=rgba(grayCol,0.5);
+    const n=fc.words.length, cols=2;
+    fc.words.forEach((w,i)=>{ const col=i%cols, row=Math.floor(i/cols); ctx.fillText(w, fcx+(col-0.5)*28, fcy-8+row*10); });
+  }
+
+  // Больше слов в основных кластерах
+  const bgWords = [
+    { w:'кошка',  x:0.12,y:0.35,col:'#2196F3'},{ w:'пёс',   x:0.21,y:0.48,col:'#2196F3'},
+    { w:'лиса',   x:0.10,y:0.55,col:'#2196F3'},{ w:'медведь',x:0.24,y:0.30,col:'#2196F3'},
+    { w:'волк',   x:0.14,y:0.45,col:'#2196F3'},{ w:'заяц',   x:0.19,y:0.52,col:'#2196F3'},
+    { w:'слон',   x:0.22,y:0.38,col:'#2196F3'},{ w:'мышь',   x:0.08,y:0.48,col:'#2196F3'},
+    { w:'бежать', x:0.47,y:0.55,col:'#FF9800'},{ w:'прыгать',x:0.56,y:0.65,col:'#FF9800'},
+    { w:'идти',   x:0.50,y:0.70,col:'#FF9800'},{ w:'сидеть', x:0.54,y:0.58,col:'#FF9800'},
+    { w:'лежать', x:0.48,y:0.62,col:'#FF9800'},{ w:'стоять', x:0.52,y:0.68,col:'#FF9800'},
+    { w:'спать',  x:0.45,y:0.65,col:'#FF9800'},{ w:'есть',   x:0.58,y:0.55,col:'#FF9800'},
+    { w:'дом',    x:0.65,y:0.28,col:'#9C27B0'},{ w:'двор',   x:0.76,y:0.42,col:'#9C27B0'},
+    { w:'улица',  x:0.80,y:0.25,col:'#9C27B0'},{ w:'крыша',  x:0.70,y:0.38,col:'#9C27B0'},
+    { w:'комната',x:0.68,y:0.32,col:'#9C27B0'},{ w:'парк',   x:0.78,y:0.30,col:'#9C27B0'},
+    { w:'лес',    x:0.74,y:0.45,col:'#9C27B0'},{ w:'река',   x:0.82,y:0.40,col:'#9C27B0'},
+    { w:'стол',   x:0.32,y:0.18,col:'#009688'},{ w:'стул',   x:0.40,y:0.28,col:'#009688'},
+    { w:'книга',  x:0.28,y:0.28,col:'#009688'},{ w:'лампа',  x:0.36,y:0.22,col:'#009688'},
+    { w:'окно',   x:0.38,y:0.20,col:'#009688'},{ w:'дверь',  x:0.34,y:0.26,col:'#009688'},
+    { w:'чашка',  x:0.30,y:0.24,col:'#009688'},{ w:'тарелка',x:0.42,y:0.18,col:'#009688'},
+  ];
+  for(const pw of bgWords) {
+    const wx=ox+pw.x*iw, wy=oy+pw.y*ih;
+    ctx.beginPath(); ctx.arc(wx,wy,3,0,Math.PI*2);
+    ctx.fillStyle=rgba(pw.col,0.35); ctx.fill();
+    ctx.font='7.5px Inter,sans-serif'; ctx.textAlign='center'; ctx.fillStyle=rgba(pw.col,0.5);
+    ctx.fillText(pw.w,wx,wy-6);
+  }
+
+  // Связи между словами из разных кластеров (семантические мосты)
+  const wordLinks = [
+    [0.17,0.42, 0.70,0.38],   // кот → крыша
+    [0.50,0.60, 0.72,0.35],   // сидит → место
+    [0.35,0.25, 0.65,0.28],   // стол → дом
+    [0.21,0.48, 0.76,0.42],   // пёс → двор
+  ];
+  ctx.strokeStyle='rgba(76,175,80,0.18)'; ctx.lineWidth=0.8; ctx.setLineDash([3,4]);
+  for(const [x1,y1,x2,y2] of wordLinks) {
+    const wx1=ox+x1*iw, wy1=oy+y1*ih, wx2=ox+x2*iw, wy2=oy+y2*ih;
+    ctx.beginPath(); ctx.moveTo(wx1,wy1); ctx.lineTo(wx2,wy2); ctx.stroke();
+  }
+  ctx.setLineDash([]);
+
+  // Active tokens (highlighted, larger)
+  const toks = mode==='infer'?TOK_INFER:TOK_TRAIN;
+  const activeWords = [
+    { w:toks[0], x:0.17,y:0.42,col:'#2196F3'},{w:toks[1],x:0.50,y:0.60,col:'#FF9800'},
+    { w:toks[2], x:0.38,y:0.48,col:'#8a98b0'},{w:toks[3],x:0.72,y:0.35,col:'#9C27B0'},
+  ];
+  for(let i=0;i<activeWords.length;i++) {
+    const pw=activeWords[i];
+    const wx=ox+pw.x*iw, wy=oy+pw.y*ih;
+    const pulse=0.5+0.5*Math.sin(animTime*3+i);
+    ctx.beginPath(); ctx.arc(wx,wy,6+pulse*2,0,Math.PI*2);
+    ctx.fillStyle=rgba(pw.col,0.2); ctx.fill();
+    ctx.beginPath(); ctx.arc(wx,wy,6,0,Math.PI*2);
+    ctx.fillStyle=pw.col; ctx.fill();
+    ctx.font='bold 9px Inter,sans-serif'; ctx.textAlign='center'; ctx.fillStyle=pw.col;
+    ctx.shadowBlur=4; ctx.shadowColor=pw.col;
+    ctx.fillText(pw.w,wx,wy-10); ctx.shadowBlur=0;
+  }
+
+  ctx.save(); ctx.font='8px Inter,sans-serif'; ctx.fillStyle='#8a98b0'; ctx.textAlign='left';
+  ctx.fillText('← вектор 512 чисел. Серые зоны — далёкие смыслы. Линии — семантические связи.',ox,oy+ih+14);
+  ctx.restore();
+
+  ctx.restore();
+}
+
+// ═══════════════════════════════════════════════════════
+// VIZ: QKV LIBRARY ANALOGY
+// ═══════════════════════════════════════════════════════
+function drawQKVAnalogy() {
+  const ax=20, ay=H*0.56, aw=W-40, ah=H*0.40;
+  ctx.save();
+  ctx.fillStyle='rgba(255,255,255,0.96)'; ctx.shadowBlur=8; ctx.shadowColor='rgba(0,0,0,0.07)';
+  roundRect(ctx,ax,ay,aw,ah,8); ctx.fill(); ctx.shadowBlur=0;
+  ctx.strokeStyle='rgba(255,152,0,0.3)'; ctx.lineWidth=1.5;
+  roundRect(ctx,ax,ay,aw,ah,8); ctx.stroke();
+
+  ctx.font='bold 9px Orbitron,monospace'; ctx.textAlign='center'; ctx.fillStyle='#FF9800';
+  ctx.fillText('Q / K / V — АНАЛОГИЯ: БИБЛИОТЕКА',ax+aw/2,ay+16);
+
+  const colW = aw/3 - 10, rowY=ay+35, rowH=ah-50;
+  const cols = [
+    { letter:'Q', title:'QUERY — Запрос', color:'#2196F3',
+      lines:['«Что я ищу?»','','Токен "крыша" пишет','запрос в каталог:','«я — часть здания,','ищу животных рядом!»','','= числовой вектор Q'] },
+    { letter:'K', title:'KEY — Ключ', color:'#FF9800',
+      lines:['«Что я предлагаю?»','','Токен "Кот" говорит:','«я — животное,','я живу на крышах!»','','Похожесть Q·K =','оценка внимания'] },
+    { letter:'V', title:'VALUE — Значение', color:'#4CAF50',
+      lines:['«Что я несу в себе?»','','Токен "Кот" содержит','всю информацию','о себе как токене','','Высокое Q·K →','берём V "Кота"'] },
+  ];
+  for(let i=0;i<3;i++) {
+    const c=cols[i], cx2=ax+5+i*(colW+10), cy2=rowY;
+    ctx.fillStyle=rgba(c.color,0.07); ctx.fillRect(cx2,cy2,colW,rowH);
+    ctx.strokeStyle=rgba(c.color,0.3); ctx.lineWidth=1.5; ctx.strokeRect(cx2,cy2,colW,rowH);
+    ctx.font='bold 22px Inter,sans-serif'; ctx.textAlign='center'; ctx.fillStyle=c.color;
+    ctx.fillText(c.letter,cx2+colW/2,cy2+35);
+    ctx.font='bold 8px Orbitron,monospace'; ctx.fillStyle=c.color;
+    ctx.fillText(c.title,cx2+colW/2,cy2+52);
+    ctx.font='10px Inter,sans-serif'; ctx.fillStyle='#4a5870';
+    c.lines.forEach((l,li)=>ctx.fillText(l,cx2+colW/2,cy2+68+li*13));
+  }
+  ctx.restore();
+}
+
+// ═══════════════════════════════════════════════════════
+// VIZ: ATTENTION SPOTLIGHT
+// ═══════════════════════════════════════════════════════
+function drawAttentionSpotlight() {
+  const ax=20, ay=H*0.56, aw=W-40, ah=H*0.40;
+  ctx.save();
+  ctx.fillStyle='rgba(255,255,255,0.96)'; ctx.shadowBlur=8; ctx.shadowColor='rgba(0,0,0,0.07)';
+  roundRect(ctx,ax,ay,aw,ah,8); ctx.fill(); ctx.shadowBlur=0;
+  ctx.strokeStyle='rgba(255,152,0,0.3)'; ctx.lineWidth=1.5;
+  roundRect(ctx,ax,ay,aw,ah,8); ctx.stroke();
+
+  ctx.font='bold 9px Orbitron,monospace'; ctx.textAlign='center'; ctx.fillStyle='#FF9800';
+  ctx.fillText('ATTENTION — КТО НА КОГО СМОТРИТ',ax+aw/2,ay+16);
+  ctx.font='8px Inter,sans-serif'; ctx.fillStyle='#8a98b0';
+  ctx.fillText('Толщина стрелки = сила внимания. Каждое слово смотрит на все предыдущие (causal mask).',ax+aw/2,ay+29);
+
+  const map  = mode==='infer' ? ATTN_INF : ATTN_TRAIN;
+  const toks = mode==='infer' ? TOK_INFER : TOK_TRAIN;
+  const tokW = 60, tokH = 28;
+  const spacing = aw / (toks.length + 1);
+  const tokY = ay + ah/2 - tokH/2;
+  const cols = ['#2196F3','#FF9800','#8a98b0','#9C27B0'];
+
+  // Active token (cycles with animation)
+  const activeIdx = Math.floor(animTime*0.5) % toks.length;
+
+  // Draw attention arcs FROM activeIdx TO previous only (causal mask)
+  const srcX = ax + spacing * (activeIdx+1);
+  for(let j=0;j<toks.length;j++) {
+    if(j>=activeIdx) continue; // causal: только предыдущие
+    const dstX = ax + spacing*(j+1);
+    const v = map[activeIdx][j];
+    if(v < 0.03) continue;
+    const cy2 = tokY + tokH/2;
+    const cp  = tokY - 30 - v*50;
+    ctx.save();
+    ctx.strokeStyle=rgba(cols[activeIdx], 0.2+v*0.7);
+    ctx.lineWidth = 1+v*5; ctx.shadowBlur=v*8; ctx.shadowColor=cols[activeIdx];
+    ctx.beginPath(); ctx.moveTo(srcX,cy2); ctx.quadraticCurveTo((srcX+dstX)/2,cp,dstX,cy2); ctx.stroke();
+    // Arrowhead
+    const angle = Math.atan2(cy2-cp, dstX-(srcX+dstX)/2);
+    ctx.translate(dstX,cy2); ctx.rotate(angle);
+    ctx.fillStyle=rgba(cols[activeIdx],0.6);
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-8,-4); ctx.lineTo(-8,4); ctx.closePath(); ctx.fill();
+    ctx.restore();
+    // Score label
+    ctx.font='bold 9px JetBrains Mono,monospace'; ctx.textAlign='center';
+    ctx.fillStyle=rgba(cols[activeIdx],0.8);
+    ctx.fillText(v.toFixed(2),(srcX+dstX)/2,cp-5);
+  }
+
+  // Draw token boxes
+  for(let i=0;i<toks.length;i++) {
+    const tx = ax+spacing*(i+1), ty = tokY;
+    const isActive = i === activeIdx;
+    ctx.fillStyle = isActive ? rgba(cols[i],0.2) : rgba(cols[i],0.07);
+    ctx.fillRect(tx-tokW/2,ty,tokW,tokH);
+    ctx.strokeStyle = isActive ? cols[i] : rgba(cols[i],0.35);
+    ctx.lineWidth = isActive ? 2 : 1;
+    ctx.strokeRect(tx-tokW/2,ty,tokW,tokH);
+    if(isActive){ ctx.shadowBlur=8; ctx.shadowColor=cols[i]; }
+    ctx.font='bold 11px Inter,sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillStyle=isActive?cols[i]:'#4a5870';
+    ctx.fillText(toks[i],tx,ty+tokH/2); ctx.shadowBlur=0; ctx.textBaseline='alphabetic';
+
+    // Label below: "смотрит" indicator
+    if(isActive) {
+      ctx.font='bold 8px Inter,sans-serif'; ctx.fillStyle=cols[i]; ctx.textAlign='center';
+      ctx.fillText('← смотрит на предыдущие',tx,ty+tokH+14);
+    }
+  }
+
+  // Caption at bottom
+  ctx.font='8px Inter,sans-serif'; ctx.fillStyle='#8a98b0'; ctx.textAlign='left';
+  ctx.fillText(`Сейчас: "${toks[activeIdx]}" смотрит на предыдущие. 8 голов делают это параллельно с разных точек зрения.`, ax+10, ay+ah-10);
+  ctx.restore();
+}
+
+// ═══════════════════════════════════════════════════════
+// VIZ: FFN NEURON DIAGRAM
+// ═══════════════════════════════════════════════════════
+function drawNeuronDiagram() {
+  const ax=20, ay=H*0.56, aw=W-40, ah=H*0.40;
+  ctx.save();
+  ctx.fillStyle='rgba(255,255,255,0.96)'; ctx.shadowBlur=8; ctx.shadowColor='rgba(0,0,0,0.07)';
+  roundRect(ctx,ax,ay,aw,ah,8); ctx.fill(); ctx.shadowBlur=0;
+  ctx.strokeStyle='rgba(156,39,176,0.3)'; ctx.lineWidth=1.5;
+  roundRect(ctx,ax,ay,aw,ah,8); ctx.stroke();
+
+  ctx.font='bold 9px Orbitron,monospace'; ctx.textAlign='center'; ctx.fillStyle='#9C27B0';
+  ctx.fillText('КАК РАБОТАЕТ ОДИН НЕЙРОН (FFN)',ax+aw/2,ay+16);
+
+  const nx=ax+aw*0.45, ny2=ay+ah*0.52, nr=32;
+  const inputs = [
+    { v:0.34, w: 0.82, label:'нейрон 1' },
+    { v:0.67, w:-0.44, label:'нейрон 2' },
+    { v:0.21, w: 0.73, label:'нейрон 3' },
+    { v:-0.18,w: 0.29, label:'нейрон 4' },
+  ];
+
+  // Input lines
+  const inputX = ax+aw*0.18;
+  for(let i=0;i<inputs.length;i++) {
+    const inp = inputs[i];
+    const iy = ay+ah*0.28 + i*(ah*0.18);
+    const pulse = 0.4+0.6*Math.abs(Math.sin(animTime*2+i));
+    const col = inp.w>0 ? '#2196F3' : '#f44336';
+    ctx.save();
+    ctx.strokeStyle=rgba(col, pulse*0.7);
+    ctx.lineWidth=Math.abs(inp.w)*4+0.5;
+    ctx.beginPath(); ctx.moveTo(inputX,iy); ctx.lineTo(nx-nr,ny2); ctx.stroke();
+    // Input node
+    ctx.beginPath(); ctx.arc(inputX,iy,8,0,Math.PI*2);
+    ctx.fillStyle=rgba(col,0.15); ctx.fill();
+    ctx.strokeStyle=col; ctx.lineWidth=1.5; ctx.stroke();
+    ctx.font='8px Inter,sans-serif'; ctx.fillStyle='#4a5870'; ctx.textAlign='right';
+    ctx.fillText(inp.label,inputX-14,iy+3);
+    ctx.font='bold 8px JetBrains Mono,monospace'; ctx.fillStyle=col; ctx.textAlign='left';
+    ctx.fillText(`×${inp.w.toFixed(2)}`,inputX+14,iy-8);
+    ctx.restore();
+  }
+
+  // Main neuron
+  ctx.shadowBlur=12; ctx.shadowColor='#9C27B0';
+  ctx.beginPath(); ctx.arc(nx,ny2,nr,0,Math.PI*2);
+  ctx.fillStyle='rgba(156,39,176,0.1)'; ctx.fill();
+  ctx.strokeStyle='#9C27B0'; ctx.lineWidth=2; ctx.stroke();
+  ctx.shadowBlur=0;
+
+  // Sum inside
+  const sum = inputs.reduce((acc,inp)=>acc+inp.v*inp.w,0);
+  ctx.font='bold 11px JetBrains Mono,monospace'; ctx.textAlign='center'; ctx.fillStyle='#9C27B0';
+  ctx.fillText('Σ',nx,ny2-6);
+  ctx.font='8px Inter,sans-serif'; ctx.fillStyle='#6a7a90';
+  ctx.fillText(`=${sum.toFixed(2)}`,nx,ny2+8);
+
+  // ReLU gate
+  const relux = nx+nr+30, reluy=ny2;
+  ctx.strokeStyle='rgba(0,30,100,0.2)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(nx+nr,ny2); ctx.lineTo(relux-15,ny2); ctx.stroke();
+
+  ctx.fillStyle=sum>0?'rgba(76,175,80,0.15)':'rgba(244,67,54,0.1)';
+  ctx.fillRect(relux-15,ny2-16,30,32);
+  ctx.strokeStyle=sum>0?'#4CAF50':'#f44336'; ctx.lineWidth=1.5;
+  ctx.strokeRect(relux-15,ny2-16,30,32);
+  ctx.font='bold 9px JetBrains Mono,monospace'; ctx.textAlign='center'; ctx.fillStyle=sum>0?'#4CAF50':'#f44336';
+  ctx.fillText('ReLU',relux,ny2-4);
+  const outVal = Math.max(0,sum);
+  ctx.font='8px Inter,sans-serif'; ctx.fillStyle=sum>0?'#4CAF50':'#f44336';
+  ctx.fillText(sum>0?`→${outVal.toFixed(2)}`:'→0 (блок!)',relux,ny2+8);
+
+  // Output arrow
+  if(sum>0) {
+    const outX=relux+15+50;
+    ctx.strokeStyle='#4CAF50'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(relux+15,ny2); ctx.lineTo(outX-10,ny2); ctx.stroke();
+    ctx.fillStyle='#4CAF50';
+    ctx.beginPath(); ctx.moveTo(outX,ny2); ctx.lineTo(outX-10,ny2-5); ctx.lineTo(outX-10,ny2+5); ctx.closePath(); ctx.fill();
+    ctx.font='8px Inter,sans-serif'; ctx.textAlign='left'; ctx.fillStyle='#4CAF50';
+    ctx.fillText('→ всем нейронам\nследующего слоя',outX+4,ny2-4);
+  }
+
+  // Stats block
+  const sx=ax+10, sy=ay+ah-38;
+  ctx.font='bold 8.5px Inter,sans-serif'; ctx.textAlign='left'; ctx.fillStyle='#4a5870';
+  ctx.fillText('Масштаб в реальной модели:',sx,sy);
+  ctx.font='8px Inter,sans-serif'; ctx.fillStyle='#8a98b0';
+  ctx.fillText(`• 1 слой FFN: 2048 нейронов × 512 входов = 1 048 576 весов (1 млн на слой)`,sx,sy+13);
+  ctx.fillText(`• LLaMA-3 70B: 80 блоков × ~470 млн весов/блок в FFN ≈ 37.5 млрд только в FFN`,sx,sy+26);
+  ctx.restore();
+}
+
+// ═══════════════════════════════════════════════════════
+// VIZ: SCALE COMPARISON
+// ═══════════════════════════════════════════════════════
+function drawScaleChart() {
+  const ax=20, ay=H*0.56, aw=W-40, ah=H*0.40;
+  ctx.save();
+  ctx.fillStyle='rgba(255,255,255,0.96)'; ctx.shadowBlur=8; ctx.shadowColor='rgba(0,0,0,0.07)';
+  roundRect(ctx,ax,ay,aw,ah,8); ctx.fill(); ctx.shadowBlur=0;
+  ctx.strokeStyle='rgba(255,152,0,0.3)'; ctx.lineWidth=1.5;
+  roundRect(ctx,ax,ay,aw,ah,8); ctx.stroke();
+
+  ctx.font='bold 9px Orbitron,monospace'; ctx.textAlign='center'; ctx.fillStyle='#FF9800';
+  ctx.fillText('СКОЛЬКО ПАРАМЕТРОВ В НЕЙРОСЕТЯХ?',ax+aw/2,ay+16);
+  ctx.font='8px Inter,sans-serif'; ctx.fillStyle='#8a98b0';
+  ctx.fillText('Параметр = 1 число = 1 вес связи между нейронами',ax+aw/2,ay+29);
+
+  const bars = [
+    { name:'GPT-2 (2019)',     params:'117 млн',   val:0.07, col:'#4CAF50',   note:'базовый трансформер' },
+    { name:'GPT-3 (2020)',     params:'175 млрд',  val:0.37, col:'#FF9800',   note:'текст любой темы' },
+    { name:'LLaMA-3 70B',      params:'70 млрд',   val:0.29, col:'#2196F3',   note:'открытая модель' },
+    { name:'GPT-4 (2023)',     params:'~1.8 трлн', val:1.00, col:'#9C27B0',   note:'самая мощная (оценка)' },
+    { name:'Мозг человека',    params:'~100 трлн', val:0.58, col:'#f44336',   note:'синапсов (не параметров!)' },
+  ];
+
+  const barH=22, gap=8, bx=ax+170, maxW=aw-190;
+  let by=ay+44;
+  for(const b of bars) {
+    const w=Math.round(maxW*b.val);
+    ctx.fillStyle=rgba(b.col,0.12); ctx.fillRect(bx,by,maxW,barH);
+    ctx.fillStyle=rgba(b.col,0.85); ctx.fillRect(bx,by,w,barH);
+    ctx.font='bold 9px Inter,sans-serif'; ctx.textAlign='right'; ctx.fillStyle='#1a2438';
+    ctx.fillText(b.name,bx-8,by+barH/2+3);
+    ctx.font='bold 9px JetBrains Mono,monospace'; ctx.textAlign='left'; ctx.fillStyle='#fff';
+    if(w>60) ctx.fillText(b.params,bx+6,by+barH/2+3);
+    ctx.font='8px Inter,sans-serif'; ctx.fillStyle='#8a98b0';
+    ctx.fillText(b.note,bx+w+8,by+barH/2+3);
+    by += barH+gap;
+  }
+
+  by += 4;
+  ctx.font='8.5px Inter,sans-serif'; ctx.textAlign='left'; ctx.fillStyle='#6a7a90';
+  ctx.fillText('→ 1 параметр ≈ 4 байта (float32). GPT-4: ~7 ТБ только для весов.',ax+10,by+4);
+  ctx.fillText('→ Модели стекуют от 12 (GPT-2) до 120+ (GPT-4) блоков Attention+FFN.',ax+10,by+18);
+  ctx.restore();
+}
+
+// ═══════════════════════════════════════════════════════
+// VIZ: OUTPUT PROBABILITY BARS
+// ═══════════════════════════════════════════════════════
+function drawOutputBars() {
+  const ax=20, ay=H*0.56, aw=W-40, ah=H*0.40;
+  ctx.save();
+  ctx.fillStyle='rgba(255,255,255,0.96)'; ctx.shadowBlur=8; ctx.shadowColor='rgba(0,0,0,0.07)';
+  roundRect(ctx,ax,ay,aw,ah,8); ctx.fill(); ctx.shadowBlur=0;
+  ctx.strokeStyle='rgba(0,150,136,0.3)'; ctx.lineWidth=1.5;
+  roundRect(ctx,ax,ay,aw,ah,8); ctx.stroke();
+
+  ctx.font='bold 9px Orbitron,monospace'; ctx.textAlign='center'; ctx.fillStyle='#009688';
+  const title = mode==='train'?'ВЫБОР СЛЕДУЮЩЕГО ТОКЕНА (из 50 000 вариантов)':'ГЕНЕРАЦИЯ ПЕРВОГО ТОКЕНА ОТВЕТА';
+  ctx.fillText(title,ax+aw/2,ay+14);
+  ctx.font='8px Inter,sans-serif'; ctx.fillStyle='#8a98b0';
+  ctx.fillText('512 чисел → таблица словаря → 50 000 оценок → вероятности (%) → слово',ax+aw/2,ay+26);
+
+  // Мини-схема
+  const pipeY = ay+38;
+  const steps = ['512 чисел','таблица','50K оценок','вероятности','слово'];
+  const stepW = (aw-40)/steps.length;
+  ctx.font='bold 7px JetBrains Mono,monospace'; ctx.textAlign='center';
+  steps.forEach((s,i)=>{
+    const sx=ax+20+i*stepW+stepW/2;
+    ctx.fillStyle=rgba('#009688',0.85); ctx.fillRect(sx-stepW/2+6,pipeY-5,stepW-12,12);
+    ctx.strokeStyle='rgba(0,150,136,0.5)'; ctx.lineWidth=0.8; ctx.strokeRect(sx-stepW/2+6,pipeY-5,stepW-12,12);
+    ctx.fillStyle='#fff'; ctx.fillText(s,sx,pipeY+2);
+    if(i<steps.length-1){ ctx.strokeStyle='#9aabb8'; ctx.lineWidth=0.8; ctx.beginPath(); ctx.moveTo(sx+stepW/2-6,pipeY+1); ctx.lineTo(sx+stepW/2+2,pipeY+1); ctx.stroke(); ctx.fillStyle='#9aabb8'; ctx.beginPath(); ctx.moveTo(sx+stepW/2,pipeY-1); ctx.lineTo(sx+stepW/2+4,pipeY+1); ctx.lineTo(sx+stepW/2,pipeY+3); ctx.fill(); }
+  });
+
+  const words = mode==='infer'
+    ? [['Нейро',28.4,'#009688',true],['Это',22.1,'#4CAF50',false],['Искусст.',18.7,'#2196F3',false],['Система',8.3,'#FF9800',false],['Модель',6.2,'#9C27B0',false],['остальные',16.3,'#aab',false]]
+    : [['матом',28.4,'#009688',true],['на',18.7,'#4CAF50',false],['рядом',9.4,'#2196F3',false],['с',8.1,'#FF9800',false],['под',6.8,'#9C27B0',false],['остальные',28.6,'#aab',false]];
+
+  const bh=20, bx=ax+130, maxW=aw-148;
+  let by=ay+58;
+  for(const [word,pct,col,isTop] of words) {
+    const w=Math.round(maxW*pct/100);
+    const pulse = isTop ? 0.85+0.15*Math.sin(animTime*3) : 0.85;
+    ctx.fillStyle=rgba(col,0.1); ctx.fillRect(bx,by,maxW,bh);
+    ctx.fillStyle=rgba(col,pulse); ctx.fillRect(bx,by,w,bh);
+    if(isTop){ ctx.shadowBlur=8; ctx.shadowColor=col; }
+    ctx.font=`${isTop?'bold ':''} 10px Inter,sans-serif`; ctx.textAlign='right'; ctx.fillStyle=isTop?col:'#4a5870';
+    ctx.fillText(word,bx-8,by+bh/2+3); ctx.shadowBlur=0;
+    ctx.font='bold 9px JetBrains Mono,monospace'; ctx.textAlign='left'; ctx.fillStyle=isTop?'#fff':rgba(col,0.9);
+    ctx.fillText(`${pct}%`,bx+4,by+bh/2+3);
+    if(isTop) { ctx.fillStyle='#fff'; ctx.fillText(' ← ВЫБРАН!',bx+40,by+bh/2+3); }
+    by += bh+5;
+  }
+  ctx.restore();
+}
+
+// ═══════════════════════════════════════════════════════
+// VIZ: KV-CACHE (inference)
+// ═══════════════════════════════════════════════════════
+function drawKVCache() {
+  const ax=20, ay=H*0.56, aw=W-40, ah=H*0.40;
+  ctx.save();
+  ctx.fillStyle='rgba(255,255,255,0.96)'; ctx.shadowBlur=8; ctx.shadowColor='rgba(0,0,0,0.07)';
+  roundRect(ctx,ax,ay,aw,ah,8); ctx.fill(); ctx.shadowBlur=0;
+  ctx.strokeStyle='rgba(33,150,243,0.3)'; ctx.lineWidth=1.5;
+  roundRect(ctx,ax,ay,aw,ah,8); ctx.stroke();
+
+  ctx.font='bold 9px Orbitron,monospace'; ctx.textAlign='center'; ctx.fillStyle='#2196F3';
+  ctx.fillText('KV-CACHE — ПАМЯТЬ ТЕКУЩЕГО КОНТЕКСТА',ax+aw/2,ay+16);
+  ctx.font='8px Inter,sans-serif'; ctx.fillStyle='#8a98b0';
+  ctx.fillText('При генерации каждого нового слова — K и V уже обработанных токенов не пересчитываются, берутся из кэша.',ax+aw/2,ay+29);
+
+  const tableX=ax+20, tableY=ay+42, cellW=aw/7, cellH=24;
+  const headers=['Токен','K₁','K₂','...','V₁','V₂','...'];
+  const toks2=[...TOK_INFER,'Нейро','сеть','—','это'];
+  const visRows=Math.min(toks2.length,Math.floor((ah-80)/cellH));
+  const animRow=Math.min(Math.floor(animTime*0.8),visRows-1);
+
+  // Header
+  for(let i=0;i<7;i++) {
+    ctx.fillStyle='rgba(33,150,243,0.1)'; ctx.fillRect(tableX+i*cellW,tableY,cellW,cellH);
+    ctx.strokeStyle='rgba(33,150,243,0.2)'; ctx.lineWidth=0.8; ctx.strokeRect(tableX+i*cellW,tableY,cellW,cellH);
+    ctx.font='bold 8px Orbitron,monospace'; ctx.textAlign='center'; ctx.fillStyle='#2196F3';
+    ctx.fillText(headers[i],tableX+i*cellW+cellW/2,tableY+cellH/2+3);
+  }
+  // Rows
+  for(let r=0;r<visRows;r++) {
+    const ry=tableY+(r+1)*cellH;
+    const isNew=r===animRow;
+    for(let c=0;c<7;c++) {
+      ctx.fillStyle=isNew?'rgba(33,150,243,0.12)':'rgba(0,30,100,0.02)';
+      ctx.fillRect(tableX+c*cellW,ry,cellW,cellH);
+      ctx.strokeStyle=isNew?'rgba(33,150,243,0.3)':'rgba(0,30,100,0.06)';
+      ctx.lineWidth=0.8; ctx.strokeRect(tableX+c*cellW,ry,cellW,cellH);
+    }
+    ctx.font=isNew?'bold 9px Inter,sans-serif':'9px Inter,sans-serif';
+    ctx.textAlign='center'; ctx.fillStyle=isNew?'#2196F3':'#4a5870';
+    ctx.fillText(r<TOK_INFER.length?TOK_INFER[r]:toks2[r],tableX+cellW/2,ry+cellH/2+3);
+    for(let c=1;c<7;c++) {
+      ctx.font='8px JetBrains Mono,monospace'; ctx.fillStyle=isNew?'#2196F3':'#aab5c8';
+      const val=((r*7+c)*0.137-0.5).toFixed(2);
+      ctx.fillText(val,tableX+c*cellW+cellW/2,ry+cellH/2+3);
+    }
+    if(isNew) {
+      ctx.font='bold 8px Inter,sans-serif'; ctx.textAlign='left'; ctx.fillStyle='#2196F3';
+      ctx.fillText('← новый токен добавлен в кэш',tableX+7*cellW+8,ry+cellH/2+3);
+    }
+  }
+
+  ctx.font='8.5px Inter,sans-serif'; ctx.textAlign='left'; ctx.fillStyle='#6a7a90';
+  const by2=tableY+(visRows+1)*cellH+8;
+  ctx.fillText(`Без кэша: O(n²) вычислений на каждый токен.  С кэшом: O(n).  GPT-4 (128K): ~26 GB только для KV-Cache.`,ax+10,by2);
+  ctx.restore();
+}
+
+// ═══════════════════════════════════════════════════════
+// VIZ: TWO TRANSFORMER BLOCKS + BRACKET
+// ═══════════════════════════════════════════════════════
+function drawTwoBlocksViz() {
+  const ax=20, ay=H*0.56, aw=W-40, ah=H*0.40;
+  ctx.save();
+  ctx.fillStyle='rgba(255,255,255,0.96)'; ctx.shadowBlur=8; ctx.shadowColor='rgba(0,0,0,0.07)';
+  roundRect(ctx,ax,ay,aw,ah,8); ctx.fill(); ctx.shadowBlur=0;
+  ctx.strokeStyle='rgba(255,152,0,0.3)'; ctx.lineWidth=1.5;
+  roundRect(ctx,ax,ay,aw,ah,8); ctx.stroke();
+
+  ctx.font='bold 9px Orbitron,monospace'; ctx.textAlign='center'; ctx.fillStyle='#FF9800';
+  ctx.fillText('ТРАНСФОРМЕР: N БЛОКОВ ПОСЛЕДОВАТЕЛЬНО', ax+aw/2, ay+16);
+  ctx.font='8px Inter,sans-serif'; ctx.fillStyle='#8a98b0';
+  ctx.fillText('Выход каждого блока → вход следующего. Каждый блок хранит свои Wq, Wk, Wv, Wffn.', ax+aw/2, ay+28);
+
+  const bw = Math.min(aw*0.27, 210);
+  const bh = Math.min(ah*0.60, 130);
+  const gap = aw * 0.045;
+  const startX = ax + aw * 0.04;
+  const blockY = ay + ah * 0.14;
+  const midY = blockY + bh / 2;
+
+  const comps = [
+    { label:'Q / K / V', sub:'Wq·X,  Wk·X,  Wv·X', col:'#FF9800' },
+    { label:'ATTENTION',  sub:'QKᵀ/√d → V + Add&Norm', col:'#E91E63' },
+    { label:'FFN',        sub:'ReLU(x·W₁)·W₂ + Norm', col:'#9C27B0' },
+  ];
+  const compPad = 6;
+  const compH = (bh - 28 - (comps.length-1)*4) / comps.length;
+
+  const blockDefs = [
+    { label:'БЛОК 1', sub:'Wq₁, Wk₁, Wv₁, Wffn₁', border:'#FF9800' },
+    { label:'БЛОК 2', sub:'Wq₂, Wk₂, Wv₂, Wffn₂', border:'#E91E63' },
+  ];
+
+  // Draw each block
+  for (let b = 0; b < blockDefs.length; b++) {
+    const bd = blockDefs[b];
+    const bx = startX + b * (bw + gap);
+
+    // Outer box
+    ctx.fillStyle='rgba(255,152,0,0.04)';
+    roundRect(ctx,bx,blockY,bw,bh,8); ctx.fill();
+    ctx.strokeStyle=rgba(bd.border,0.5); ctx.lineWidth=1.8; ctx.setLineDash([5,3]);
+    roundRect(ctx,bx,blockY,bw,bh,8); ctx.stroke(); ctx.setLineDash([]);
+
+    // Block title
+    ctx.font='bold 8.5px Orbitron,monospace'; ctx.textAlign='center'; ctx.fillStyle=bd.border;
+    ctx.fillText(bd.label, bx+bw/2, blockY+12);
+    ctx.font='7px JetBrains Mono,monospace'; ctx.fillStyle='rgba(100,120,160,0.55)';
+    ctx.fillText(bd.sub, bx+bw/2, blockY+22);
+
+    // Internal components
+    for (let ci = 0; ci < comps.length; ci++) {
+      const c = comps[ci];
+      const cx2 = bx + compPad;
+      const cw = bw - compPad*2;
+      const cy2 = blockY + 27 + ci*(compH+4);
+      ctx.fillStyle=rgba(c.col,0.09); roundRect(ctx,cx2,cy2,cw,compH,4); ctx.fill();
+      ctx.strokeStyle=rgba(c.col,0.3); ctx.lineWidth=1; roundRect(ctx,cx2,cy2,cw,compH,4); ctx.stroke();
+      ctx.font='bold 7.5px Orbitron,monospace'; ctx.textAlign='center'; ctx.fillStyle=c.col;
+      ctx.fillText(c.label, cx2+cw/2, cy2+compH/2-3);
+      ctx.font='7px JetBrains Mono,monospace'; ctx.fillStyle='#8a98b0';
+      ctx.fillText(c.sub, cx2+cw/2, cy2+compH/2+7);
+      // Tiny arrow between components
+      if (ci < comps.length-1) {
+        const aax = cx2+cw/2;
+        ctx.strokeStyle=rgba(c.col,0.35); ctx.lineWidth=1;
+        ctx.beginPath(); ctx.moveTo(aax,cy2+compH); ctx.lineTo(aax,cy2+compH+4); ctx.stroke();
+        ctx.fillStyle=rgba(c.col,0.35);
+        ctx.beginPath(); ctx.moveTo(aax-3,cy2+compH+4); ctx.lineTo(aax,cy2+compH+8); ctx.lineTo(aax+3,cy2+compH+4); ctx.closePath(); ctx.fill();
+      }
+    }
+
+    // Arrow to next block
+    if (b < blockDefs.length-1) {
+      const arrowX = bx+bw;
+      ctx.strokeStyle='rgba(100,120,160,0.6)'; ctx.lineWidth=1.8;
+      ctx.beginPath(); ctx.moveTo(arrowX,midY); ctx.lineTo(arrowX+gap-4,midY); ctx.stroke();
+      ctx.fillStyle='rgba(100,120,160,0.6)';
+      ctx.beginPath(); ctx.moveTo(arrowX+gap-10,midY-5); ctx.lineTo(arrowX+gap,midY); ctx.lineTo(arrowX+gap-10,midY+5); ctx.closePath(); ctx.fill();
+    }
+  }
+
+  // "..." + ghost БЛОК N
+  const dotsX = startX + 2*(bw+gap);
+  ctx.strokeStyle='rgba(100,120,160,0.4)'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(startX+2*(bw+gap)-gap+4, midY); ctx.lineTo(dotsX+gap*0.3, midY); ctx.stroke();
+  ctx.font='bold 16px Inter,sans-serif'; ctx.textAlign='left'; ctx.fillStyle='rgba(100,120,160,0.5)';
+  ctx.fillText('...', dotsX+gap*0.3+4, midY+5);
+
+  // Ghost block N
+  const ghostX = dotsX + gap*0.3 + 28;
+  const ghostW = bw * 0.7;
+  ctx.strokeStyle='rgba(76,175,80,0.2)'; ctx.lineWidth=1; ctx.setLineDash([4,3]);
+  roundRect(ctx,ghostX,blockY,ghostW,bh,8); ctx.stroke(); ctx.setLineDash([]);
+  ctx.font='bold 8px Orbitron,monospace'; ctx.textAlign='center'; ctx.fillStyle='rgba(76,175,80,0.4)';
+  ctx.fillText('БЛОК N', ghostX+ghostW/2, blockY+14);
+  ctx.font='7px Inter,sans-serif'; ctx.fillStyle='rgba(100,120,160,0.35)';
+  ctx.fillText('Wqₙ, Wkₙ, Wvₙ, Wffnₙ', ghostX+ghostW/2, blockY+24);
+
+  // Arrow after ghost → OUTPUT
+  const arrowOutX = ghostX+ghostW;
+  ctx.strokeStyle='rgba(0,150,136,0.5)'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(arrowOutX,midY); ctx.lineTo(arrowOutX+gap*0.6,midY); ctx.stroke();
+  ctx.fillStyle='rgba(0,150,136,0.5)';
+  ctx.beginPath(); ctx.moveTo(arrowOutX+gap*0.6-8,midY-4); ctx.lineTo(arrowOutX+gap*0.6,midY); ctx.lineTo(arrowOutX+gap*0.6-8,midY+4); ctx.closePath(); ctx.fill();
+  ctx.font='7px Inter,sans-serif'; ctx.textAlign='center'; ctx.fillStyle='rgba(0,150,136,0.55)';
+  ctx.fillText('OUTPUT', arrowOutX+gap*0.3, midY-8);
+
+  // Bottom bracket  |___|
+  const brX1 = startX;
+  const brX2 = ghostX + ghostW;
+  const brY  = blockY + bh + 18;
+  const tick = 9;
+  ctx.strokeStyle='#cc7700'; ctx.lineWidth=2;
+  ctx.beginPath();
+  ctx.moveTo(brX1, brY-tick); ctx.lineTo(brX1, brY);
+  ctx.lineTo(brX2, brY);
+  ctx.lineTo(brX2, brY-tick);
+  ctx.stroke();
+
+  ctx.font='bold 9.5px Inter,sans-serif'; ctx.textAlign='center'; ctx.fillStyle='#cc7700';
+  ctx.fillText('× 12–120 повторений', (brX1+brX2)/2, brY+15);
+  ctx.font='8px Inter,sans-serif'; ctx.fillStyle='#9aabb8';
+  ctx.fillText('GPT-2: 12 · LLaMA-3 70B: 80 · GPT-3: 96 · GPT-4: ~120 блоков', (brX1+brX2)/2, brY+27);
+
+  ctx.restore();
+}
+
+// ═══════════════════════════════════════════════════════
+// STEP-SPECIFIC VISUALIZATION DISPATCHER
+// ═══════════════════════════════════════════════════════
+function drawStepVisual() {
+  const v = curStep().viz;
+  if(!v) return;
+  switch(v) {
+    case 'embedding':  drawEmbeddingCloud(); break;
+    case 'qkv':        drawQKVAnalogy();     break;
+    case 'attention':  drawAttentionSpotlight(); break;
+    case 'ffn':        drawNeuronDiagram();  break;
+    case 'scale':      drawScaleChart();     break;
+    case 'twoBlocks':  drawTwoBlocksViz();   break;
+    case 'output':     drawOutputBars();     break;
+    case 'kvcache':    drawKVCache();        break;
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// DRAW: TRANSFORMER BLOCK REPEAT INDICATOR
+// ═══════════════════════════════════════════════════════
+function drawBlockRepeat() {
+  const al = curStep().active || [];
+  const blockActive = al.some(i => i >= 2 && i <= 4);
+
+  const bx1 = lx(2) - 26;
+  const bx2 = lx(4) + 26;
+  const by1 = ny(0) - 38;
+  const by2 = ny(NUM_NODES - 1) + 26;
+  const bw  = bx2 - bx1;
+  const bh  = by2 - by1;
+
+  ctx.save();
+
+  // Ghost stacks — only stroke (no fill), so they don't merge into one blob
+  for (let i = 2; i >= 1; i--) {
+    const ox = i * 8, oy = i * 8;
+    const opacity = blockActive ? 0.18 * (3 - i) : 0.08 * (3 - i);
+    ctx.strokeStyle = `rgba(255,152,0,${opacity})`;
+    ctx.lineWidth = 1; ctx.setLineDash([4, 3]);
+    roundRect(ctx, bx1 + ox, by1 + oy, bw, bh, 10); ctx.stroke();
+    ctx.setLineDash([]);
+    // Small "БЛОК N" tag — top-left corner only
+    ctx.font = '6.5px Orbitron,monospace'; ctx.textAlign = 'left';
+    ctx.fillStyle = `rgba(255,152,0,${opacity * 1.4})`;
+    ctx.fillText(`БЛОК ${i + 1}`, bx1 + ox + 6, by1 + oy + 10);
+  }
+
+  // Main bracket: BLOCK 1 — light fill + stroke
+  ctx.fillStyle = blockActive ? 'rgba(255,152,0,0.05)' : 'rgba(255,152,0,0.02)';
+  roundRect(ctx, bx1, by1, bw, bh, 10); ctx.fill();
+  ctx.strokeStyle = blockActive ? 'rgba(255,152,0,0.58)' : 'rgba(255,152,0,0.2)';
+  ctx.lineWidth = blockActive ? 1.8 : 1.1; ctx.setLineDash([5, 4]);
+  roundRect(ctx, bx1, by1, bw, bh, 10); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // "БЛОК 1" label
+  ctx.font = 'bold 7.5px Orbitron,monospace'; ctx.textAlign = 'left';
+  ctx.fillStyle = blockActive ? 'rgba(255,152,0,0.85)' : 'rgba(255,152,0,0.38)';
+  ctx.fillText('БЛОК 1', bx1 + 6, by1 + 11);
+
+  // Loop arrow: FFN → Q/K/V (below nodes)
+  const arrowY = by2 + 12;
+  const ax1    = lx(4);
+  const ax2    = lx(2);
+  const spaceOk = !hasViz() ? true : arrowY < H * 0.50;
+  if (spaceOk) {
+    const aOpacity = blockActive ? 0.7 : 0.3;
+    ctx.strokeStyle = `rgba(255,152,0,${aOpacity})`;
+    ctx.lineWidth = 1.5; ctx.setLineDash([5, 3]);
+    ctx.beginPath();
+    ctx.moveTo(ax1, arrowY - 4);
+    ctx.bezierCurveTo(ax1 + 18, arrowY + 16, ax2 - 18, arrowY + 16, ax2, arrowY - 4);
+    ctx.stroke(); ctx.setLineDash([]);
+    // Arrowhead
+    ctx.fillStyle = `rgba(255,152,0,${aOpacity})`;
+    ctx.beginPath();
+    ctx.moveTo(ax2, arrowY - 4);
+    ctx.lineTo(ax2 - 7, arrowY + 3);
+    ctx.lineTo(ax2 + 2, arrowY + 5);
+    ctx.closePath(); ctx.fill();
+  }
+
+  ctx.restore();
+}
+
+// ═══════════════════════════════════════════════════════
+// PARTICLES
+// ═══════════════════════════════════════════════════════
+function spawnParticles() {
+  const sd=curStep(), al=sd.active||[];
+  if(al.length<2) return;
+  for(let k=0;k<al.length-1;k++) {
+    const l1=al[k], l2=al[k+1];
+    if(Math.abs(l2-l1)!==1) continue;
+    if(Math.random()>0.2) continue;
+    const n1=Math.floor(Math.random()*NUM_NODES), n2=Math.floor(Math.random()*NUM_NODES);
+    const dir=sd.dir, col=dir==='back'?'#f44336':dir==='update'?'#4CAF50':sd.col||'#2196F3';
+    const from=dir==='back'?l2:l1, to=dir==='back'?l1:l2;
+    if(from<0||from>=NUM_LAYERS||to<0||to>=NUM_LAYERS) continue;
+    particles.push(new Pulse(from,to,n1,n2,col,Math.random()*0.2));
+  }
+}
+
+function updateGlows(dt) {
+  const al=curStep().active||[];
+  for(let l=0;l<NUM_LAYERS;l++) {
+    const isA=al.includes(l);
+    for(let i=0;i<NUM_NODES;i++) {
+      const target = isA ? 0.4+0.6*Math.sin(animTime*2.5+l*1.1+i*0.8) : 0;
+      nodeGlow[l][i] += (target-nodeGlow[l][i])*dt*5;
+      nodeGlow[l][i]  = Math.max(0, nodeGlow[l][i]);
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// ANIMATION LOOP
+// ═══════════════════════════════════════════════════════
+function animate(ts) {
+  if(!lastTs) lastTs=ts;
+  const dt = Math.min((ts-lastTs)/1000, 0.05);
+  lastTs=ts; animTime+=dt;
+
+  if(isPlaying) {
+    spawnParticles();
+    stepTimer += dt*speedMult;
+    if(stepTimer >= 3.2) {
+      stepTimer=0;
+      if(step<nSteps()-1){ step++; particles=[]; updateUI(); }
+      else { isPlaying=false; setPlayBtn(false); }
+    }
+  }
+
+  particles = particles.filter(p=>!p.done);
+  particles.forEach(p=>p.update(dt*speedMult*1.4));
+  updateGlows(dt);
+
+  drawBg();
+  drawBlockRepeat();
+  drawEdges();
+  drawWeightHints();
+  drawNodes();
+  const sd=curStep();
+  if(mode==='train' && step>=7) drawLossChart();
+  drawBackprop();
+  drawWeightUpdate();
+  drawModeLabel();
+  particles.forEach(p=>p.draw(ctx));
+  drawStepVisual(); // always last so it draws on top
+
+  requestAnimationFrame(animate);
+}
+
+// ═══════════════════════════════════════════════════════
+// UI
+// ═══════════════════════════════════════════════════════
+function updateUI() {
+  const sd=curStep();
+  document.getElementById('pStep').textContent   = `ШАГ ${step+1} / ${nSteps()}`;
+  document.getElementById('pTitle').textContent  = sd.title  || '';
+  document.getElementById('pSimple').textContent = sd.simple || '';
+  document.getElementById('pDesc').textContent   = sd.desc   || '';
+  document.getElementById('pCode').textContent   = sd.code   || '';
+  document.getElementById('progFill').style.width = ((step+1)/nSteps()*100)+'%';
+  document.getElementById('btnBack').disabled  = step===0;
+  document.getElementById('btnStep').disabled  = step===nSteps()-1;
+
+  const al = sd.active||[];
+  for(let i=0;i<NUM_LAYERS;i++) {
+    const el=document.getElementById('li-'+i);
+    if(!el) continue;
+    if(al.includes(i)) el.classList.add('active'); else el.classList.remove('active');
+  }
+}
+
+function setPlayBtn(playing) {
+  const b=document.getElementById('btnPlay');
+  b.textContent = playing ? '⏸ ПАУЗА' : '▶ PLAY';
+  b.className   = playing ? 'cbtn' : 'cbtn pri';
+}
+
+function resetAll() {
+  step=0; particles=[]; isPlaying=false; lastTs=null; animTime=0; stepTimer=0;
+  nodeGlow = Array.from({length:NUM_LAYERS},()=>new Float32Array(NUM_NODES));
+  setPlayBtn(false); updateUI();
+}
+
+// ═══════════════════════════════════════════════════════
+// CONTROLS
+// ═══════════════════════════════════════════════════════
+document.getElementById('btnPlay').addEventListener('click',()=>{ isPlaying=!isPlaying; setPlayBtn(isPlaying); });
+document.getElementById('btnStep').addEventListener('click',()=>{ isPlaying=false; stepTimer=0; setPlayBtn(false); if(step<nSteps()-1){step++;particles=[];updateUI();} });
+document.getElementById('btnBack').addEventListener('click',()=>{ isPlaying=false; stepTimer=0; setPlayBtn(false); if(step>0){step--;particles=[];updateUI();} });
+document.getElementById('btnReset').addEventListener('click',resetAll);
+document.getElementById('speed').addEventListener('input',e=>{ speedMult=parseFloat(e.target.value); });
+document.getElementById('btnTrain').addEventListener('click',()=>{
+  mode='train'; document.getElementById('btnTrain').classList.add('active');
+  document.getElementById('btnInfer').classList.remove('active'); resetAll();
+});
+document.getElementById('btnInfer').addEventListener('click',()=>{
+  mode='infer'; document.getElementById('btnInfer').classList.add('active');
+  document.getElementById('btnTrain').classList.remove('active'); resetAll();
+});
+
+// ═══════════════════════════════════════════════════════
+// START
+// ═══════════════════════════════════════════════════════
+resize();
+updateUI();
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>

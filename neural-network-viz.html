@@ -199,7 +199,6 @@ input[type=range] { accent-color:#0077cc; width:70px; flex-shrink:0; cursor:poin
 <!-- CONTROLS -->
 <div class="ctrl">
   <button class="cbtn" id="btnBack" disabled>← НАЗАД</button>
-  <button class="cbtn pri" id="btnPlay">▶ PLAY</button>
   <button class="cbtn" id="btnStep">ВПЕРЁД →</button>
   <button class="cbtn" id="btnReset" style="margin-left:4px">↺</button>
   <div class="prog"><div class="prog-fill" id="progFill" style="width:8%"></div></div>
@@ -209,8 +208,6 @@ input[type=range] { accent-color:#0077cc; width:70px; flex-shrink:0; cursor:poin
     <div class="leg-i"><div class="leg-d" style="background:#4CAF50"></div>Обновление весов</div>
     <div class="leg-i"><div class="leg-d" style="background:#FF9800"></div>Внимание</div>
   </div>
-  <span class="spd-lbl">Скорость:</span>
-  <input type="range" id="speed" min="0.3" max="3" step="0.3" value="1">
 </div>
 
 <script>
@@ -233,7 +230,7 @@ window.addEventListener('resize', resize);
 // LAYOUT  — nodes in upper portion, viz in lower
 // ═══════════════════════════════════════════════════════
 const NUM_LAYERS = 10;
-const NUM_NODES  = 4;
+const NUM_NODES  = 5;
 const TOK_TRAIN = ['Кот','сидит','на','крыше'];
 const TOK_INFER = ['Что','такое','нейро','сеть'];
 
@@ -251,7 +248,7 @@ function ny(j) {
 }
 
 function lx(i) {
-  const ml = W * 0.03, mr = W * 0.22;
+  const ml = W * 0.02, mr = W * 0.04;
   return ml + (W - ml - mr) * (i / (NUM_LAYERS - 1));
 }
 
@@ -282,16 +279,20 @@ const LAYER_META = [
 // Вектор, который embedding передаёт в блок (4 из 512 компонент)
 const EMBEDDING_VEC = [0.34, -0.12, 0.78, 0.41];
 
+function extend5x5(m) {
+  const r = (i,j) => m[Math.min(i,3)][Math.min(j,3)];
+  return Array.from({length:5}, (_,i)=>Array.from({length:5}, (_,j)=>r(i,j)));
+}
 const W_SMPL = [
-  [[ 0.34, 0.12,-0.67, 0.89],[ 0.21,-0.45, 0.77,-0.33],[ 0.56, 0.82,-0.19, 0.44],[-0.71, 0.38, 0.62,-0.55]],
-  [[ 0.41,-0.29, 0.58, 0.73],[ 0.85,-0.62, 0.19,-0.47],[ 0.33, 0.66,-0.81, 0.12],[-0.54, 0.97,-0.28, 0.65]],
-  [[ 0.12, 0.05,-0.08, 0.03],[ 0.02,-0.01, 0.04,-0.02],[ 0.06, 0.03,-0.05, 0.01],[-0.04, 0.02, 0.07,-0.03]],
-  [[ 0.67, 0.28,-0.44, 0.83],[ 0.31,-0.75, 0.92,-0.18],[ 0.59, 0.47,-0.63, 0.24],[-0.82, 0.16, 0.74,-0.39]],
-  [[ 0.53,-0.37, 0.68, 0.22],[ 0.79, 0.44,-0.56, 0.31],[ 0.16,-0.88, 0.43,-0.67],[ 0.94,-0.21, 0.77, 0.48]],
-  [[ 0.42, 0.73,-0.29, 0.61],[ 0.85,-0.54, 0.38,-0.72],[ 0.27, 0.96,-0.47, 0.13],[-0.63, 0.35, 0.82,-0.44]],
-  [[ 0.38, 0.61,-0.22, 0.55],[ 0.72,-0.48, 0.31,-0.65],[ 0.19, 0.84,-0.41, 0.08],[-0.58, 0.28, 0.76,-0.38]],
-  [[ 0.45, 0.68,-0.31, 0.59],[ 0.81,-0.52, 0.35,-0.68],[ 0.24, 0.91,-0.44, 0.11],[-0.62, 0.32, 0.79,-0.41]],
-  [[ 0.51, 0.71,-0.28, 0.62],[ 0.78,-0.55, 0.38,-0.71],[ 0.29, 0.88,-0.46, 0.14],[-0.65, 0.35, 0.82,-0.45]],
+  extend5x5([[ 0.34, 0.12,-0.67, 0.89],[ 0.21,-0.45, 0.77,-0.33],[ 0.56, 0.82,-0.19, 0.44],[-0.71, 0.38, 0.62,-0.55]]),
+  extend5x5([[ 0.41,-0.29, 0.58, 0.73],[ 0.85,-0.62, 0.19,-0.47],[ 0.33, 0.66,-0.81, 0.12],[-0.54, 0.97,-0.28, 0.65]]),
+  extend5x5([[ 0.12, 0.05,-0.08, 0.03],[ 0.02,-0.01, 0.04,-0.02],[ 0.06, 0.03,-0.05, 0.01],[-0.04, 0.02, 0.07,-0.03]]),
+  extend5x5([[ 0.67, 0.28,-0.44, 0.83],[ 0.31,-0.75, 0.92,-0.18],[ 0.59, 0.47,-0.63, 0.24],[-0.82, 0.16, 0.74,-0.39]]),
+  extend5x5([[ 0.53,-0.37, 0.68, 0.22],[ 0.79, 0.44,-0.56, 0.31],[ 0.16,-0.88, 0.43,-0.67],[ 0.94,-0.21, 0.77, 0.48]]),
+  extend5x5([[ 0.42, 0.73,-0.29, 0.61],[ 0.85,-0.54, 0.38,-0.72],[ 0.27, 0.96,-0.47, 0.13],[-0.63, 0.35, 0.82,-0.44]]),
+  extend5x5([[ 0.38, 0.61,-0.22, 0.55],[ 0.72,-0.48, 0.31,-0.65],[ 0.19, 0.84,-0.41, 0.08],[-0.58, 0.28, 0.76,-0.38]]),
+  extend5x5([[ 0.45, 0.68,-0.31, 0.59],[ 0.81,-0.52, 0.35,-0.68],[ 0.24, 0.91,-0.44, 0.11],[-0.62, 0.32, 0.79,-0.41]]),
+  extend5x5([[ 0.51, 0.71,-0.28, 0.62],[ 0.78,-0.55, 0.38,-0.71],[ 0.29, 0.88,-0.46, 0.14],[-0.65, 0.35, 0.82,-0.45]]),
 ];
 
 // ═══════════════════════════════════════════════════════
@@ -462,14 +463,10 @@ const INFER_STEPS = [
 // ═══════════════════════════════════════════════════════
 let mode      = 'train';
 let step      = 0;
-let isPlaying = false;
-let speedMult = 1;
 let animTime  = 0;
 let lastTs    = null;
-let stepTimer = 0;
 
 let nodeGlow = Array.from({length:NUM_LAYERS}, () => new Float32Array(NUM_NODES));
-let particles = [];
 
 const ATTN_TRAIN = [[0.70,0.20,0.05,0.05],[0.10,0.60,0.20,0.10],[0.05,0.15,0.65,0.15],[0.02,0.08,0.25,0.65]];
 const ATTN_INF   = [[0.60,0.20,0.10,0.10],[0.10,0.50,0.25,0.15],[0.05,0.10,0.50,0.35],[0.05,0.10,0.40,0.45]];
@@ -482,32 +479,6 @@ function curStep() { return steps()[step] || {}; }
 function rgba(h, a) {
   const r=parseInt(h.slice(1,3),16), g=parseInt(h.slice(3,5),16), b=parseInt(h.slice(5,7),16);
   return `rgba(${r},${g},${b},${a})`;
-}
-
-// ═══════════════════════════════════════════════════════
-// PARTICLE
-// ═══════════════════════════════════════════════════════
-class Pulse {
-  constructor(l1,l2,n1,n2,col,delay=0) {
-    Object.assign(this,{l1,l2,n1,n2,col,delay,t:-delay,done:false});
-  }
-  update(dt) { this.t += dt; if(this.t >= 1) this.done = true; }
-  get p() { return Math.max(0, Math.min(1, this.t)); }
-  draw(ctx) {
-    if(this.t < 0) return;
-    const x1=lx(this.l1),y1=ny(this.n1),x2=lx(this.l2),y2=ny(this.n2);
-    const p=this.p, x=x1+(x2-x1)*p, y=y1+(y2-y1)*p;
-    ctx.save();
-    ctx.shadowBlur=10; ctx.shadowColor=this.col;
-    for(let i=5;i>=0;i--) {
-      const tp=Math.max(0,p-i*0.04);
-      const tx=x1+(x2-x1)*tp, ty=y1+(y2-y1)*tp;
-      ctx.globalAlpha = i===0 ? 1 : (1-i/6)*0.25;
-      ctx.beginPath(); ctx.arc(tx,ty,i===0?4:3*(1-i/6),0,Math.PI*2);
-      ctx.fillStyle=this.col; ctx.fill();
-    }
-    ctx.restore();
-  }
 }
 
 // ═══════════════════════════════════════════════════════
@@ -525,7 +496,7 @@ function drawBg() {
     const sepY = H * 0.55;
     ctx.save();
     ctx.strokeStyle='rgba(0,30,100,0.08)'; ctx.lineWidth=1; ctx.setLineDash([6,4]);
-    ctx.beginPath(); ctx.moveTo(20,sepY); ctx.lineTo(W*0.76-20,sepY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(20,sepY); ctx.lineTo(W-20,sepY); ctx.stroke();
     ctx.restore();
   }
 }
@@ -541,8 +512,10 @@ function drawEdges() {
     const isAdditive = l === 1; // E + pos
     const isPassThrough = l === 5 || l === 7 || l === 8; // Add&Norm, Final LN
     for(let i=0;i<NUM_NODES;i++) {
+      if((l===0 || l===1 || l===2) && i>=4) continue; // только 4 позиции
       for(let j=0;j<NUM_NODES;j++) {
-        if(isLookup && i !== j) continue;
+        if(l===1 && j>=4) continue; // emb→+pos: 4 в 4
+        if(isLookup && (i !== j || i>=4)) continue;
         if(isAdditive && i !== j) continue; // 1-to-1 для E+pos
         const w = W_SMPL[Math.min(l, W_SMPL.length-1)][i][j];
         const alpha = active ? 0.32 : 0.10;
@@ -570,7 +543,7 @@ function drawWeightHints() {
 
   // Шаг 2 (Embedding): подпись «→ вектор [512]» у выхода EMBEDDING
   if(step === 1 && al.includes(1)) {
-    const ex = lx(1) + 18, ey = (ny(0)+ny(NUM_NODES-1))/2;
+    const ex = lx(1) + 18, ey = (ny(0)+ny(3))/2;
     ctx.save();
     ctx.font='bold 7.5px Orbitron,monospace'; ctx.textAlign='left';
     ctx.fillStyle='rgba(76,175,80,0.9)';
@@ -584,8 +557,8 @@ function drawWeightHints() {
     if(l === 0) {
       const ids = mode==='infer' ? [4821,2819,8847,3321] : [2847,9134,421,6623];
       const mx = (lx(0)+lx(1))/2;
-      for(let j=0;j<NUM_NODES;j++) {
-        const my = (ny(j)+ny(j))/2; // midpoint on diagonal connection
+      for(let j=0;j<4;j++) {
+        const my = (ny(j)+ny(j))/2;
         ctx.save();
         ctx.fillStyle='rgba(240,250,245,0.95)'; ctx.shadowBlur=3; ctx.shadowColor='rgba(76,175,80,0.15)';
         ctx.fillRect(mx-22,my-7,44,14);
@@ -606,7 +579,7 @@ function drawWeightHints() {
     }
 
     if(l === 1) {
-      const mx = (lx(1)+lx(2))/2, my = (ny(0)+ny(NUM_NODES-1))/2;
+      const mx = (lx(1)+lx(2))/2, my = (ny(0)+ny(3))/2;
       ctx.save();
       ctx.fillStyle='rgba(240,250,245,0.95)'; ctx.shadowBlur=3; ctx.shadowColor='rgba(93,138,102,0.2)';
       ctx.fillRect(mx-28,my-8,56,16);
@@ -701,9 +674,11 @@ function drawWeightHints() {
 function drawNodes() {
   const sd=curStep(), al=sd.active||[];
   const toks = mode==='infer' ? TOK_INFER : TOK_TRAIN;
+  const SEQ_LEN = 4; // tokens, embedding, +pos — по 4
   for(let l=0;l<NUM_LAYERS;l++) {
     const m=LAYER_META[l], active=al.includes(l), X=lx(l);
-    for(let i=0;i<NUM_NODES;i++) {
+    const nNodes = (l<=2) ? SEQ_LEN : NUM_NODES; // 0:токены, 1:emb, 2:+pos
+    for(let i=0;i<nNodes;i++) {
       const Y=ny(i), gw=nodeGlow[l][i];
       ctx.save();
       if(gw>0.05){ ctx.shadowBlur=16*gw; ctx.shadowColor=m.col; }
@@ -717,7 +692,7 @@ function drawNodes() {
       ctx.strokeStyle=rgba(m.col, active?0.95:0.4); ctx.lineWidth=active?2:1.2; ctx.stroke();
       ctx.font='bold 9px Inter,sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
       if(l===0) { ctx.fillStyle=active?m.col:'#9aabb8'; ctx.fillText(toks[i],X,Y); }
-      else       { ctx.fillStyle=active?m.col:'#b0bfcc'; ctx.fillText(i+1,X,Y); }
+      else       { ctx.fillStyle=active?m.col:'#b0bfcc'; ctx.fillText(i<4 ? String(i+1) : '…',X,Y); }
       ctx.restore();
     }
     const topY = ny(0) - (hasViz() ? 32 : 38);
@@ -813,8 +788,8 @@ function drawModeLabel() {
 // ═══════════════════════════════════════════════════════
 function drawArchPanel() {
   const sd  = curStep();
-  const px  = W * 0.78, py = 12;
-  const pw  = W * 0.21 - 8, ph = H - 24;
+  const pw  = Math.min(W * 0.16, 200), ph = H - 24;
+  const px  = W - pw - 16, py = 12;
 
   ctx.save();
   ctx.fillStyle='rgba(255,255,255,0.95)'; ctx.shadowBlur=8; ctx.shadowColor='rgba(0,0,0,0.07)';
@@ -1653,21 +1628,6 @@ function drawBlockRepeat() {
 // ═══════════════════════════════════════════════════════
 // PARTICLES
 // ═══════════════════════════════════════════════════════
-function spawnParticles() {
-  const sd=curStep(), al=sd.active||[];
-  if(al.length<2) return;
-  for(let k=0;k<al.length-1;k++) {
-    const l1=al[k], l2=al[k+1];
-    if(Math.abs(l2-l1)!==1) continue;
-    if(Math.random()>0.2) continue;
-    const n1=Math.floor(Math.random()*NUM_NODES), n2=Math.floor(Math.random()*NUM_NODES);
-    const dir=sd.dir, col=dir==='back'?'#f44336':dir==='update'?'#4CAF50':sd.col||'#2196F3';
-    const from=dir==='back'?l2:l1, to=dir==='back'?l1:l2;
-    if(from<0||from>=NUM_LAYERS||to<0||to>=NUM_LAYERS) continue;
-    particles.push(new Pulse(from,to,n1,n2,col,Math.random()*0.2));
-  }
-}
-
 function updateGlows(dt) {
   const al=curStep().active||[];
   for(let l=0;l<NUM_LAYERS;l++) {
@@ -1688,18 +1648,6 @@ function animate(ts) {
   const dt = Math.min((ts-lastTs)/1000, 0.05);
   lastTs=ts; animTime+=dt;
 
-  if(isPlaying) {
-    spawnParticles();
-    stepTimer += dt*speedMult;
-    if(stepTimer >= 3.2) {
-      stepTimer=0;
-      if(step<nSteps()-1){ step++; particles=[]; updateUI(); }
-      else { isPlaying=false; setPlayBtn(false); }
-    }
-  }
-
-  particles = particles.filter(p=>!p.done);
-  particles.forEach(p=>p.update(dt*speedMult*1.4));
   updateGlows(dt);
 
   drawBg();
@@ -1712,7 +1660,6 @@ function animate(ts) {
   drawBackprop();
   drawWeightUpdate();
   drawModeLabel();
-  particles.forEach(p=>p.draw(ctx));
   drawStepVisual(); // always last so it draws on top
 
   requestAnimationFrame(animate);
@@ -1740,26 +1687,18 @@ function updateUI() {
   }
 }
 
-function setPlayBtn(playing) {
-  const b=document.getElementById('btnPlay');
-  b.textContent = playing ? '⏸ ПАУЗА' : '▶ PLAY';
-  b.className   = playing ? 'cbtn' : 'cbtn pri';
-}
-
 function resetAll() {
-  step=0; particles=[]; isPlaying=false; lastTs=null; animTime=0; stepTimer=0;
+  step=0; lastTs=null; animTime=0;
   nodeGlow = Array.from({length:NUM_LAYERS},()=>new Float32Array(NUM_NODES));
-  setPlayBtn(false); updateUI();
+  updateUI();
 }
 
 // ═══════════════════════════════════════════════════════
 // CONTROLS
 // ═══════════════════════════════════════════════════════
-document.getElementById('btnPlay').addEventListener('click',()=>{ isPlaying=!isPlaying; setPlayBtn(isPlaying); });
-document.getElementById('btnStep').addEventListener('click',()=>{ isPlaying=false; stepTimer=0; setPlayBtn(false); if(step<nSteps()-1){step++;particles=[];updateUI();} });
-document.getElementById('btnBack').addEventListener('click',()=>{ isPlaying=false; stepTimer=0; setPlayBtn(false); if(step>0){step--;particles=[];updateUI();} });
+document.getElementById('btnStep').addEventListener('click',()=>{ if(step<nSteps()-1){step++;updateUI();} });
+document.getElementById('btnBack').addEventListener('click',()=>{ if(step>0){step--;updateUI();} });
 document.getElementById('btnReset').addEventListener('click',resetAll);
-document.getElementById('speed').addEventListener('input',e=>{ speedMult=parseFloat(e.target.value); });
 document.getElementById('btnTrain').addEventListener('click',()=>{
   mode='train'; document.getElementById('btnTrain').classList.add('active');
   document.getElementById('btnInfer').classList.remove('active'); resetAll();
